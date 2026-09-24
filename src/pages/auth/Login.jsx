@@ -1,68 +1,124 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
+  KeyRound,
   Users, 
   Building2, 
   Tent, 
   HeartHandshake, 
   ArrowRight, 
   ArrowLeft,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
-  const [identifier, setIdentifier] = useState(''); // Email or Mobile Number
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
-  
-  const [errors, setErrors] = useState({});
+  const [step, setStep] = useState(1); // 1: Send OTP, 2: Verify OTP
+  const [email, setEmail] = useState('');
+  const [otpToken, setOtpToken] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
 
-  const { loginUser } = useAuth();
+  // 30s Resend Timer
+  const [resendTimer, setResendTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
+
+  const { sendOtp, verifyOtp } = useAuth();
   const navigate = useNavigate();
 
-  // Validation regex
+  // Email regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phoneRegex = /^\d{10}$/;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const newErrors = {};
-
-    const cleanInput = identifier.trim();
-
-    if (!cleanInput) {
-      newErrors.identifier = 'Email or mobile number is required.';
-    } else {
-      const isEmail = emailRegex.test(cleanInput);
-      const isPhone = phoneRegex.test(cleanInput);
-
-      if (!isEmail && !isPhone) {
-        newErrors.identifier = 'Enter a valid email address or 10-digit mobile number.';
-      }
+  // Countdown timer effect for Step 2
+  useEffect(() => {
+    let timer;
+    if (step === 2 && resendTimer > 0) {
+      setCanResend(false);
+      timer = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (resendTimer === 0) {
+      setCanResend(true);
     }
+    return () => clearInterval(timer);
+  }, [step, resendTimer]);
 
-    if (!password) {
-      newErrors.password = 'Password is required.';
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters.';
-    }
+  // Step 1: Send OTP to Email
+  const handleSendOtp = async (e) => {
+    if (e) e.preventDefault();
+    setError('');
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setError('Email address is required.');
       return;
     }
 
-    setErrors({});
-    // Call mock AuthContext login
-    loginUser(cleanInput, 'Dharshini Raj');
-    navigate('/');
+    if (!emailRegex.test(cleanEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await sendOtp(cleanEmail);
+      setStep(2);
+      setResendTimer(30);
+      setCanResend(false);
+      setToastMessage('OTP code sent to your email address!');
+      setTimeout(() => setToastMessage(''), 4000);
+    } catch (err) {
+      console.error('Send OTP error:', err);
+      setError(err.message || 'Failed to send OTP code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2: Verify OTP Token
+  const handleVerifyOtp = async (e) => {
+    if (e) e.preventDefault();
+    setError('');
+
+    const cleanToken = otpToken.trim();
+    if (!cleanToken || cleanToken.length < 6) {
+      setError('Please enter the full 6-digit OTP code.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await verifyOtp(email.trim(), cleanToken);
+      setToastMessage('Authentication successful! Redirecting...');
+      setTimeout(() => navigate('/'), 800);
+    } catch (err) {
+      console.error('Verify OTP error:', err);
+      setError(err.message || 'Invalid or expired OTP code. Please check and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!canResend || loading) return;
+    setError('');
+    setLoading(true);
+    try {
+      await sendOtp(email.trim());
+      setResendTimer(30);
+      setCanResend(false);
+      setToastMessage('New OTP code sent!');
+      setTimeout(() => setToastMessage(''), 4000);
+    } catch (err) {
+      console.error('Resend OTP error:', err);
+      setError(err.message || 'Failed to resend OTP.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -70,19 +126,14 @@ export default function Login() {
     setTimeout(() => setToastMessage(''), 3500);
   };
 
-  const fillDemo = () => {
-    setIdentifier('dharshini@ngo-tn.org');
-    setPassword('password123');
-    setErrors({});
-  };
-
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 font-sans">
       
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-2xl animate-in fade-in duration-200">
-          {toastMessage}
+        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-2xl animate-in fade-in duration-200 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
         </div>
       )}
 
@@ -91,7 +142,7 @@ export default function Login() {
       {/* ========================================================= */}
       <div className="md:w-[40%] lg:w-[42%] bg-gradient-to-br from-[#0a1a3d] via-[#0c204c] to-[#0d2456] text-white p-6 sm:p-10 flex flex-col justify-between relative overflow-hidden min-h-[360px] md:min-h-screen shrink-0">
         
-        {/* Background Subtle Wavy Curved Shape SVG */}
+        {/* Background Wavy Curved Shape SVG */}
         <svg 
           className="absolute bottom-0 left-0 right-0 w-full h-32 opacity-15 text-cyan-400 fill-current pointer-events-none" 
           viewBox="0 0 1440 320" 
@@ -139,24 +190,20 @@ export default function Login() {
         <div className="relative z-10 my-6 py-4 flex items-center justify-center">
           <div className="relative w-64 h-56 flex items-center justify-center">
             
-            {/* SVG Dotted Connecting Lines */}
+            {/* SVG Dotted Lines */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 256 224">
-              {/* Line to Top-Left (NGOs) */}
               <line x1="128" y1="112" x2="48" y2="48" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.7" />
-              {/* Line to Top-Right (Volunteers) */}
               <line x1="128" y1="112" x2="208" y2="48" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.7" />
-              {/* Line to Bottom-Left (Camps) */}
               <line x1="128" y1="112" x2="48" y2="176" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.7" />
-              {/* Line to Bottom-Right (Social Impact) */}
               <line x1="128" y1="112" x2="208" y2="176" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.7" />
             </svg>
 
-            {/* Central Circle (Bright Blue with Glowing Ring) */}
+            {/* Central Circle */}
             <div className="relative z-20 w-16 h-16 rounded-full bg-blue-600 border-4 border-cyan-400/50 shadow-xl shadow-blue-600/50 flex items-center justify-center text-white ring-8 ring-blue-500/20">
               <Users className="w-8 h-8 text-white" />
             </div>
 
-            {/* Node 1: Top-Left (NGOs) */}
+            {/* Node 1: NGOs */}
             <div className="absolute top-2 left-2 flex flex-col items-center group cursor-pointer z-20">
               <div className="w-11 h-11 rounded-2xl bg-slate-800/90 border border-cyan-400/40 text-cyan-300 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                 <Building2 className="w-5 h-5" />
@@ -164,7 +211,7 @@ export default function Login() {
               <span className="text-[10px] font-bold text-slate-200 mt-1">NGOs</span>
             </div>
 
-            {/* Node 2: Top-Right (Volunteers) */}
+            {/* Node 2: Volunteers */}
             <div className="absolute top-2 right-2 flex flex-col items-center group cursor-pointer z-20">
               <div className="w-11 h-11 rounded-2xl bg-slate-800/90 border border-cyan-400/40 text-cyan-300 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                 <Users className="w-5 h-5" />
@@ -172,7 +219,7 @@ export default function Login() {
               <span className="text-[10px] font-bold text-slate-200 mt-1">Volunteers</span>
             </div>
 
-            {/* Node 3: Bottom-Left (Camps) */}
+            {/* Node 3: Camps */}
             <div className="absolute bottom-2 left-2 flex flex-col items-center group cursor-pointer z-20">
               <div className="w-11 h-11 rounded-2xl bg-slate-800/90 border border-cyan-400/40 text-cyan-300 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                 <Tent className="w-5 h-5" />
@@ -180,7 +227,7 @@ export default function Login() {
               <span className="text-[10px] font-bold text-slate-200 mt-1">Camps</span>
             </div>
 
-            {/* Node 4: Bottom-Right (Social Impact) */}
+            {/* Node 4: Social Impact */}
             <div className="absolute bottom-2 right-2 flex flex-col items-center group cursor-pointer z-20">
               <div className="w-11 h-11 rounded-2xl bg-slate-800/90 border border-cyan-400/40 text-cyan-300 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                 <HeartHandshake className="w-5 h-5" />
@@ -203,7 +250,7 @@ export default function Login() {
       {/* ========================================================= */}
       <div className="md:w-[60%] lg:w-[58%] bg-white p-6 sm:p-10 md:p-12 flex flex-col justify-between relative overflow-y-auto min-h-screen">
         
-        {/* Top-Right Back to Home Link */}
+        {/* Top-Right Back Link */}
         <div className="flex justify-end mb-4 sm:mb-6">
           <Link 
             to="/" 
@@ -220,122 +267,137 @@ export default function Login() {
           {/* Form Heading & Subtext */}
           <div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0a1a3d] tracking-tight">
-              Welcome Back
+              {step === 1 ? 'Welcome Back' : 'Enter Verification Code'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-              Sign in to continue to Tamil Nadu NGO Connect
+              {step === 1 
+                ? 'Sign in to continue to Tamil Nadu NGO Connect' 
+                : `We've sent a 6-digit code to ${email}`}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs font-semibold">
-            
-            {/* Email or Mobile Number Input */}
-            <div>
-              <label className="text-slate-700 block mb-1.5 font-bold">
-                Email or Mobile Number
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                <input
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => {
-                    setIdentifier(e.target.value);
-                    if (errors.identifier) setErrors({ ...errors, identifier: '' });
-                  }}
-                  placeholder="Enter your email or mobile number"
-                  className={`w-full pl-10 pr-4 py-3 rounded-xl border text-slate-800 placeholder-slate-400 focus:outline-none transition ${
-                    errors.identifier 
-                      ? 'border-rose-500 bg-rose-50/30 focus:border-rose-500' 
-                      : 'border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10'
-                  }`}
-                />
-              </div>
-              {errors.identifier && (
-                <div className="flex items-center gap-1 text-[11px] font-bold text-rose-600 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>{errors.identifier}</span>
+          {/* STEP 1: Email Input Form */}
+          {step === 1 && (
+            <form onSubmit={handleSendOtp} className="space-y-4 text-xs font-semibold">
+              <div>
+                <label className="text-slate-700 block mb-1.5 font-bold">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (error) setError('');
+                    }}
+                    placeholder="Enter your email address"
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl border text-slate-800 placeholder-slate-400 focus:outline-none transition ${
+                      error 
+                        ? 'border-rose-500 bg-rose-50/30 focus:border-rose-500' 
+                        : 'border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10'
+                    }`}
+                  />
                 </div>
-              )}
-            </div>
+                {error && (
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-rose-600 mt-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+              </div>
 
-            {/* Password Input with Eye Toggle */}
-            <div>
-              <label className="text-slate-700 block mb-1.5 font-bold">
-                Password
-              </label>
-              <div className="relative flex items-center">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password) setErrors({ ...errors, password: '' });
-                  }}
-                  placeholder="Enter your password"
-                  className={`w-full pl-10 pr-10 py-3 rounded-xl border text-slate-800 placeholder-slate-400 focus:outline-none transition ${
-                    errors.password 
-                      ? 'border-rose-500 bg-rose-50/30 focus:border-rose-500' 
-                      : 'border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10'
-                  }`}
-                />
+              <button
+                type="submit"
+                disabled={loading || !email.trim()}
+                className={`w-full py-3.5 rounded-xl text-white font-extrabold text-xs shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-2 active:scale-98 ${
+                  loading || !email.trim()
+                    ? 'bg-blue-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+                }`}
+              >
+                <span>{loading ? 'Sending OTP...' : 'Send OTP'}</span>
+                {!loading && <ArrowRight className="w-4 h-4" />}
+              </button>
+            </form>
+          )}
+
+          {/* STEP 2: Verify OTP Token Form */}
+          {step === 2 && (
+            <form onSubmit={handleVerifyOtp} className="space-y-4 text-xs font-semibold">
+              <div>
+                <label className="text-slate-700 block mb-1.5 font-bold">
+                  6-Digit OTP Code
+                </label>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={otpToken}
+                    onChange={(e) => {
+                      setOtpToken(e.target.value.replace(/\D/g, ''));
+                      if (error) setError('');
+                    }}
+                    placeholder="123456"
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl border text-center text-lg font-mono font-bold tracking-[0.5em] text-slate-900 focus:outline-none transition ${
+                      error 
+                        ? 'border-rose-500 bg-rose-50/30 focus:border-rose-500' 
+                        : 'border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10'
+                    }`}
+                  />
+                </div>
+                {error && (
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-rose-600 mt-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || otpToken.length < 6}
+                className={`w-full py-3.5 rounded-xl text-white font-extrabold text-xs shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-2 active:scale-98 ${
+                  loading || otpToken.length < 6
+                    ? 'bg-blue-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+                }`}
+              >
+                <span>{loading ? 'Verifying...' : 'Verify & Login'}</span>
+                {!loading && <ArrowRight className="w-4 h-4" />}
+              </button>
+
+              {/* Resend OTP & Change Email Controls */}
+              <div className="flex items-center justify-between text-xs pt-1">
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3.5 text-slate-400 hover:text-slate-600 transition"
+                  onClick={() => {
+                    setStep(1);
+                    setError('');
+                  }}
+                  className="font-bold text-slate-600 hover:text-blue-600 transition flex items-center gap-1"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <ArrowLeft className="w-3.5 h-3.5" /> Change email
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!canResend || loading}
+                  onClick={handleResendOtp}
+                  className={`font-bold transition flex items-center gap-1 ${
+                    canResend && !loading 
+                      ? 'text-blue-600 hover:underline cursor-pointer' 
+                      : 'text-slate-400 cursor-not-allowed'
+                  }`}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  <span>{canResend ? 'Resend OTP' : `Resend OTP in ${resendTimer}s`}</span>
                 </button>
               </div>
-              {errors.password && (
-                <div className="flex items-center gap-1 text-[11px] font-bold text-rose-600 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>{errors.password}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Remember Me & Forgot Password Row */}
-            <div className="flex items-center justify-between text-xs pt-1">
-              <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="accent-blue-600 rounded w-4 h-4"
-                />
-                <span>Remember me</span>
-              </label>
-
-              <button type="button" className="font-bold text-blue-600 hover:underline">
-                Forgot password?
-              </button>
-            </div>
-
-            {/* Full-width Login Button */}
-            <button
-              type="submit"
-              className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-2 active:scale-98 cursor-pointer mt-2"
-            >
-              <span>Login</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-          </form>
-
-          {/* Quick Demo Credentials Helper */}
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-600 font-semibold">
-            <span>Demo: </span>
-            <button
-              type="button"
-              onClick={fillDemo}
-              className="text-blue-600 font-bold hover:underline ml-1"
-            >
-              Auto-fill Demo Credentials
-            </button>
-          </div>
+            </form>
+          )}
 
           {/* OR Divider */}
           <div className="flex items-center gap-3 py-1">
@@ -350,7 +412,6 @@ export default function Login() {
             onClick={handleGoogleLogin}
             className="w-full py-3 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2.5 cursor-pointer active:scale-98"
           >
-            {/* Google SVG Icon */}
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>

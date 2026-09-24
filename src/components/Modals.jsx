@@ -1,0 +1,446 @@
+import React, { useState } from 'react';
+import { 
+  X, 
+  CheckCircle2, 
+  Heart, 
+  Building2, 
+  Calendar, 
+  UserPlus, 
+  MapPin, 
+  ShieldCheck, 
+  Phone, 
+  Mail, 
+  Globe, 
+  Star,
+  IndianRupee,
+  Share2
+} from 'lucide-react';
+import { ALL_TN_DISTRICTS } from '../data/mockData';
+
+export function NGOProfileModal({ ngo, onClose, onOpenDonateModal }) {
+  if (!ngo) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 relative animate-in zoom-in-95 duration-200">
+        
+        {/* Banner Header */}
+        <div className={`p-6 ${ngo.logoBg} text-white relative`}>
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-full bg-black/20 hover:bg-black/40 text-white transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md text-white font-black text-xl flex items-center justify-center border border-white/30 shadow-lg">
+              {ngo.logoInitials}
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold backdrop-blur-sm border border-white/20">
+                  {ngo.category}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-100 text-[10px] font-bold backdrop-blur-sm border border-emerald-400/30 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-300" /> Govt Verified
+                </span>
+              </div>
+              <h2 className="text-xl font-extrabold text-white tracking-tight">{ngo.name}</h2>
+              <p className="text-xs text-blue-100 font-semibold flex items-center gap-1 mt-0.5">
+                <MapPin className="w-3.5 h-3.5" /> {ngo.district}, Tamil Nadu • Estd. {ngo.established}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Body */}
+        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          
+          {/* Key Stats Bar */}
+          <div className="grid grid-cols-3 gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+            <div>
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">Impact</span>
+              <p className="text-xs font-extrabold text-slate-900">{ngo.impact}</p>
+            </div>
+            <div className="border-x border-slate-200">
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">Volunteers</span>
+              <p className="text-xs font-extrabold text-blue-600">{ngo.volunteers}</p>
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">Rating</span>
+              <p className="text-xs font-extrabold text-amber-600 flex items-center justify-center gap-0.5">
+                <Star className="w-3.5 h-3.5 fill-current" /> {ngo.rating}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">About Organization</h3>
+            <p className="text-xs text-slate-600 leading-relaxed font-normal">{ngo.description}</p>
+          </div>
+
+          {/* Contact Details */}
+          <div className="space-y-2 pt-2 border-t border-slate-100 text-xs font-medium text-slate-700">
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4 text-blue-600" /> <span>+91 94440 12345 / 044-2435 8899</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-blue-600" /> <span>contact@{ngo.id}.org</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-blue-600" /> <span>www.{ngo.id}.org</span>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Footer Actions */}
+        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+          <button 
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition"
+          >
+            Close
+          </button>
+
+          <button 
+            onClick={() => {
+              onClose();
+              onOpenDonateModal();
+            }}
+            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs shadow-md hover:from-blue-700 hover:to-indigo-700 transition flex items-center justify-center gap-2"
+          >
+            <Heart className="w-4 h-4 fill-current text-rose-300" />
+            <span>Donate to this NGO</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
+export function VolunteerModal({ onClose }) {
+  const [submitted, setSubmitted] = useState(false);
+  const [formData, setFormData] = useState({ name: '', phone: '', district: 'Chennai', cause: 'Medical & Health' });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+    setTimeout(() => {
+      setSubmitted(false);
+      onClose();
+    }, 2500);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-slate-200 relative animate-in zoom-in-95">
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:bg-slate-100 transition"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center">
+            <UserPlus className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900">Volunteer Registration</h2>
+            <p className="text-xs text-slate-500 font-medium">Join Tamil Nadu's largest volunteer movement</p>
+          </div>
+        </div>
+
+        {submitted ? (
+          <div className="p-6 text-center space-y-3 animate-in fade-in">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">Registration Successful!</h3>
+            <p className="text-xs text-slate-600">
+              Thank you, <span className="font-bold">{formData.name || 'Volunteer'}</span>! Local NGOs in {formData.district} will contact you shortly.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3 text-xs font-semibold">
+            <div>
+              <label className="text-slate-600 block mb-1">Full Name</label>
+              <input 
+                type="text" 
+                required
+                placeholder="e.g. Dharshini Raj"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-600 block mb-1">Mobile Number</label>
+              <input 
+                type="tel" 
+                required
+                placeholder="+91 98765 43210"
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-600 block mb-1">District</label>
+              <select 
+                value={formData.district}
+                onChange={(e) => setFormData({...formData, district: e.target.value})}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none bg-white"
+              >
+                {ALL_TN_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-slate-600 block mb-1">Primary Interest Area</label>
+              <select 
+                value={formData.cause}
+                onChange={(e) => setFormData({...formData, cause: e.target.value})}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none bg-white"
+              >
+                <option value="Medical & Health">Medical & Health Camps</option>
+                <option value="Blood Donation">Blood & Plasma Drives</option>
+                <option value="Education">Underprivileged Education</option>
+                <option value="Environment">Plantation & Lake Cleanup</option>
+                <option value="Disaster Relief">Flood & Emergency Response</option>
+              </select>
+            </div>
+
+            <button 
+              type="submit"
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition mt-2"
+            >
+              Submit Volunteer Profile
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+export function DonateModal({ onClose }) {
+  const [amount, setAmount] = useState('1000');
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+    setTimeout(() => {
+      setSubmitted(false);
+      onClose();
+    }, 2500);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-slate-200 relative animate-in zoom-in-95">
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:bg-slate-100 transition"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+            <Heart className="w-5 h-5 fill-current" />
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900">Make a Donation</h2>
+            <p className="text-xs text-slate-500 font-medium">100% Tax Exempt under Section 80G</p>
+          </div>
+        </div>
+
+        {submitted ? (
+          <div className="p-6 text-center space-y-3 animate-in fade-in">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+            <h3 className="text-base font-bold text-slate-800">Donation Complete!</h3>
+            <p className="text-xs text-slate-600">
+              Thank you for contributing <span className="font-bold text-emerald-700">₹{amount}</span>! Your 80G tax receipt has been sent to your email.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 text-xs font-semibold">
+            
+            {/* Amount Presets */}
+            <div>
+              <label className="text-slate-600 block mb-2">Select Donation Amount</label>
+              <div className="grid grid-cols-3 gap-2">
+                {['500', '1000', '2500'].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setAmount(amt)}
+                    className={`py-2.5 rounded-xl border text-xs font-extrabold transition ${
+                      amount === amt 
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    ₹{amt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-slate-600 block mb-1">Custom Amount (₹)</label>
+              <input 
+                type="number" 
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-600 focus:outline-none text-sm font-bold text-slate-800"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-600 block mb-1">Payment Method</label>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-[11px]">
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                  <input type="radio" name="pay" defaultChecked className="accent-emerald-600" />
+                  <span>UPI (Google Pay, PhonePe, Paytm, BHIM)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-600">
+                  <input type="radio" name="pay" className="accent-emerald-600" />
+                  <span>Credit / Debit Card / NetBanking</span>
+                </label>
+              </div>
+            </div>
+
+            <button 
+              type="submit"
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition"
+            >
+              Proceed to Donate ₹{amount || 0}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+export function RegisterNGOModal({ onClose }) {
+  const [submitted, setSubmitted] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-slate-200 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 rounded-full">
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
+            <Building2 className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900">Add / Register NGO</h2>
+            <p className="text-xs text-slate-500 font-medium">Get listed on TN NGO Connect</p>
+          </div>
+        </div>
+
+        {submitted ? (
+          <div className="p-6 text-center space-y-3">
+            <CheckCircle2 className="w-12 h-12 text-amber-500 mx-auto" />
+            <h3 className="text-base font-bold">Application Submitted!</h3>
+            <p className="text-xs text-slate-600">Our verification team will inspect your Darpan / 80G credentials and approve within 48 hours.</p>
+          </div>
+        ) : (
+          <form onSubmit={(e) => { e.preventDefault(); setSubmitted(true); setTimeout(onClose, 2500); }} className="space-y-3 text-xs font-semibold">
+            <div>
+              <label className="text-slate-600 block mb-1">NGO Name</label>
+              <input required type="text" placeholder="e.g. Pasumai Trust" className="w-full px-3.5 py-2 rounded-xl border border-slate-300" />
+            </div>
+            <div>
+              <label className="text-slate-600 block mb-1">NITI Aayog Darpan ID / Reg No.</label>
+              <input required type="text" placeholder="TN/2024/0987654" className="w-full px-3.5 py-2 rounded-xl border border-slate-300" />
+            </div>
+            <div>
+              <label className="text-slate-600 block mb-1">Headquarters District</label>
+              <select className="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white">
+                {ALL_TN_DISTRICTS.map(d => <option key={d}>{d}</option>)}
+              </select>
+            </div>
+            <button type="submit" className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md mt-2">
+              Submit NGO for Verification
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+export function PostEventModal({ onClose }) {
+  const [submitted, setSubmitted] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-slate-200 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 rounded-full">
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900">Post Event or Camp</h2>
+            <p className="text-xs text-slate-500 font-medium">Broadcast your upcoming drive across TN</p>
+          </div>
+        </div>
+
+        {submitted ? (
+          <div className="p-6 text-center space-y-3">
+            <CheckCircle2 className="w-12 h-12 text-purple-600 mx-auto" />
+            <h3 className="text-base font-bold">Event Published!</h3>
+            <p className="text-xs text-slate-600">Your camp is now live on the TN NGO Connect home feed.</p>
+          </div>
+        ) : (
+          <form onSubmit={(e) => { e.preventDefault(); setSubmitted(true); setTimeout(onClose, 2500); }} className="space-y-3 text-xs font-semibold">
+            <div>
+              <label className="text-slate-600 block mb-1">Event Title</label>
+              <input required type="text" placeholder="e.g. Blood Donation Camp 2026" className="w-full px-3.5 py-2 rounded-xl border border-slate-300" />
+            </div>
+            <div>
+              <label className="text-slate-600 block mb-1">Event Category</label>
+              <select className="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white">
+                <option>Medical & Health Camp</option>
+                <option>Blood & Plasma Drive</option>
+                <option>Tree Plantation & Eco Drive</option>
+                <option>Food & Ration Distribution</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-slate-600 block mb-1">Venue Location & District</label>
+              <input required type="text" placeholder="GH Grounds, Coimbatore" className="w-full px-3.5 py-2 rounded-xl border border-slate-300" />
+            </div>
+            <button type="submit" className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md mt-2">
+              Publish Event Now
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}

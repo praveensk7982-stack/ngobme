@@ -23,7 +23,6 @@ import {
   UserPlus
 } from 'lucide-react';
 import { INITIAL_NOTIFICATIONS, getCombinedSearchData } from '../data/mockData';
-import { useAuth } from '../context/AuthContext';
 
 export default function TopBar({ 
   searchQuery, 
@@ -33,7 +32,12 @@ export default function TopBar({
   onOpenDonateModal,
   onClearNotifications
 }) {
-  const { user, role, logout } = useAuth();
+  const user = {
+    name: 'Dharshini Raj',
+    email: 'dharshini@ngo-tn.org',
+    district: 'Chennai',
+    badge: 'Verified Volunteer Lead'
+  };
   
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState('');
@@ -449,166 +453,70 @@ export default function TopBar({
 
           <div className="h-6 w-px bg-slate-200" />
 
-          {/* AUTH STATE DISPLAY */}
-          
-          {/* STATE 1: LOGGED OUT */}
-          {!role && (
-            <div className="flex items-center gap-2">
-              <Link
-                to="/login"
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition flex items-center gap-1.5 active:scale-95"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Login</span>
-              </Link>
+          {/* USER PROFILE DISPLAY */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowUserMenu(!showUserMenu);
+                setShowNotifications(false);
+              }}
+              className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition group"
+            >
+              <div className="relative">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-white">
+                  {user.name[0]}
+                </div>
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+              </div>
 
-              <Link
-                to="/admin-login"
-                title="State Secretariat Admin Portal"
-                className="px-3 py-1.5 rounded-xl bg-[#0f1e3d] hover:bg-slate-900 text-amber-300 text-[11px] font-bold border border-amber-400/30 transition flex items-center gap-1.5 shadow-sm active:scale-95"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Admin</span>
-              </Link>
-            </div>
-          )}
+              <div className="hidden sm:block text-left">
+                <div className="text-xs font-bold text-slate-800 flex items-center gap-1 group-hover:text-blue-600 transition">
+                  {user.name}
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                </div>
+                <span className="text-[10px] text-slate-500 font-medium block -mt-0.5">{user.badge}</span>
+              </div>
 
-          {/* STATE 2: LOGGED IN AS USER */}
-          {role === 'user' && (
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowUserMenu(!showUserMenu);
-                  setShowNotifications(false);
-                }}
-                className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition group"
-              >
-                <div className="relative">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-white">
-                    {user?.name ? user.name[0] : 'D'}
-                  </div>
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* User Menu Dropdown */}
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-2 border-b border-slate-100">
+                  <p className="text-xs font-bold text-slate-800">{user.name}</p>
+                  <p className="text-[11px] text-slate-500">{user.email}</p>
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                    Verified Volunteer Lead
+                  </span>
                 </div>
 
-                <div className="hidden sm:block text-left">
-                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1 group-hover:text-blue-600 transition">
-                    {user?.name || 'Dharshini'}
-                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-                  </div>
-                  <span className="text-[10px] text-slate-500 font-medium block -mt-0.5">{user?.badge || 'Volunteer Lead'}</span>
+                <div className="py-1 text-xs">
+                  <Link 
+                    to="/my-activity" 
+                    onClick={() => setShowUserMenu(false)}
+                    className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
+                  >
+                    <User className="w-4 h-4 text-slate-400" /> My Profile & Activity
+                  </Link>
+                  <Link 
+                    to="/settings" 
+                    onClick={() => setShowUserMenu(false)}
+                    className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
+                  >
+                    <SlidersHorizontal className="w-4 h-4 text-slate-400" /> Account Settings
+                  </Link>
+                  <Link 
+                    to="/admin" 
+                    onClick={() => setShowUserMenu(false)}
+                    className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-amber-500" /> Admin Console
+                  </Link>
                 </div>
-
-                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* User Dropdown */}
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-xs font-bold text-slate-800">{user?.name || 'Dharshini Raj'}</p>
-                    <p className="text-[11px] text-slate-500">{user?.email || 'dharshini@ngo-tn.org'}</p>
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
-                      Verified Volunteer
-                    </span>
-                  </div>
-
-                  <div className="py-1 text-xs">
-                    <Link 
-                      to="/my-activity" 
-                      onClick={() => setShowUserMenu(false)}
-                      className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
-                    >
-                      <User className="w-4 h-4 text-slate-400" /> My Profile & Activity
-                    </Link>
-                    <Link 
-                      to="/settings" 
-                      onClick={() => setShowUserMenu(false)}
-                      className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
-                    >
-                      <SlidersHorizontal className="w-4 h-4 text-slate-400" /> Account Settings
-                    </Link>
-                  </div>
-
-                  <div className="pt-1 border-t border-slate-100">
-                    <button 
-                      onClick={handleLogout}
-                      className="w-full px-4 py-2 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 text-xs font-semibold"
-                    >
-                      <LogOut className="w-4 h-4" /> Sign Out
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* STATE 3: LOGGED IN AS ADMIN */}
-          {role === 'admin' && (
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowUserMenu(!showUserMenu);
-                  setShowNotifications(false);
-                }}
-                className="flex items-center gap-2 p-1.5 rounded-xl bg-[#0f1e3d] text-white border border-amber-400/40 hover:bg-slate-900 transition group shadow-md"
-              >
-                <div className="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs">
-                  <ShieldCheck className="w-5 h-5 text-slate-950" />
-                </div>
-
-                <div className="hidden sm:block text-left pr-1">
-                  <div className="text-xs font-bold text-amber-300 flex items-center gap-1">
-                    State Admin
-                  </div>
-                  <span className="text-[10px] text-blue-200 font-semibold block -mt-0.5">Control Console</span>
-                </div>
-
-                <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Admin Dropdown */}
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-slate-100 bg-slate-50">
-                    <p className="text-xs font-bold text-slate-900 flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-                      {user?.name || 'System Administrator'}
-                    </p>
-                    <p className="text-[11px] text-slate-500">{user?.email || 'admin@ngo-tn.gov.in'}</p>
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-200">
-                      Govt Admin Access
-                    </span>
-                  </div>
-
-                  <div className="py-1 text-xs">
-                    <Link 
-                      to="/admin" 
-                      onClick={() => setShowUserMenu(false)}
-                      className="w-full px-4 py-2 text-left text-slate-800 hover:bg-slate-50 flex items-center gap-2 font-bold"
-                    >
-                      <ShieldCheck className="w-4 h-4 text-amber-600" /> Open Admin Console
-                    </Link>
-                    <Link 
-                      to="/my-activity" 
-                      onClick={() => setShowUserMenu(false)}
-                      className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
-                    >
-                      <User className="w-4 h-4 text-slate-400" /> My Profile
-                    </Link>
-                  </div>
-
-                  <div className="pt-1 border-t border-slate-100">
-                    <button 
-                      onClick={handleLogout}
-                      className="w-full px-4 py-2 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 text-xs font-semibold"
-                    >
-                      <LogOut className="w-4 h-4" /> Admin Logout
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
         </div>
 

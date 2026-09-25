@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { UserProtectedRoute, AdminProtectedRoute } from './components/ProtectedRoute';
 
-// Layouts
-import AuthLayout from './layouts/AuthLayout';
+// Main Layout
 import MainLayout from './layouts/MainLayout';
 
-// Public & Main Pages
+// Main Pages
 import Home from './pages/Home';
 import NGODirectory from './pages/NGODirectory';
 import CampsEvents from './pages/CampsEvents';
@@ -18,13 +15,6 @@ import MyActivity from './pages/MyActivity';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import SearchResults from './pages/SearchResults';
-
-// Auth Pages
-import Login from './pages/auth/Login';
-import Signup from './pages/auth/Signup';
-import AdminLogin from './pages/auth/AdminLogin';
-
-// Admin Page
 import AdminDashboard from './pages/admin/AdminDashboard';
 
 export default function App() {
@@ -39,105 +29,82 @@ export default function App() {
   const [showPostEventModal, setShowPostEventModal] = useState(false);
 
   return (
-    <AuthProvider>
-      <Routes>
-        
-        {/* STANDALONE AUTH ROUTES (AuthLayout: No TopBar, No Sidebar) */}
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/admin-login" element={<AdminLogin />} />
-        </Route>
-
-        {/* PROTECTED MAIN APP ROUTES (MainLayout: Sidebar + TopBar) */}
-        <Route element={<UserProtectedRoute />}>
-          <Route 
-            element={
-              <MainLayout 
-                selectedDistrict={selectedDistrict}
-                setSelectedDistrict={setSelectedDistrict}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                selectedNGOModal={selectedNGOModal}
-                setSelectedNGOModal={setSelectedNGOModal}
-                showVolunteerModal={showVolunteerModal}
-                setShowVolunteerModal={setShowVolunteerModal}
-                showDonateModal={showDonateModal}
-                setShowDonateModal={setShowDonateModal}
-                showRegisterNGOModal={showRegisterNGOModal}
-                setShowRegisterNGOModal={setShowRegisterNGOModal}
-                showPostEventModal={showPostEventModal}
-                setShowPostEventModal={setShowPostEventModal}
-              />
-            }
-          >
-            <Route 
-              path="/" 
-              element={
-                <Home 
-                  selectedDistrict={selectedDistrict}
-                  setSelectedDistrict={setSelectedDistrict}
-                  onSelectNGO={(ngo) => setSelectedNGOModal(ngo)}
-                  onOpenVolunteerModal={() => setShowVolunteerModal(true)}
-                  onOpenDonateModal={() => setShowDonateModal(true)}
-                  onOpenRegisterNGOModal={() => setShowRegisterNGOModal(true)}
-                  onOpenPostEventModal={() => setShowPostEventModal(true)}
-                />
-              } 
+    <Routes>
+      <Route 
+        element={
+          <MainLayout 
+            selectedDistrict={selectedDistrict}
+            setSelectedDistrict={setSelectedDistrict}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedNGOModal={selectedNGOModal}
+            setSelectedNGOModal={setSelectedNGOModal}
+            showVolunteerModal={showVolunteerModal}
+            setShowVolunteerModal={setShowVolunteerModal}
+            showDonateModal={showDonateModal}
+            setShowDonateModal={setShowDonateModal}
+            showRegisterNGOModal={showRegisterNGOModal}
+            setShowRegisterNGOModal={setShowRegisterNGOModal}
+            showPostEventModal={showPostEventModal}
+            setShowPostEventModal={setShowPostEventModal}
+          />
+        }
+      >
+        <Route 
+          path="/" 
+          element={
+            <Home 
+              selectedDistrict={selectedDistrict}
+              setSelectedDistrict={setSelectedDistrict}
+              onSelectNGO={(ngo) => setSelectedNGOModal(ngo)}
+              onOpenVolunteerModal={() => setShowVolunteerModal(true)}
+              onOpenDonateModal={() => setShowDonateModal(true)}
+              onOpenRegisterNGOModal={() => setShowRegisterNGOModal(true)}
+              onOpenPostEventModal={() => setShowPostEventModal(true)}
             />
+          } 
+        />
 
-            <Route 
-              path="/ngo-directory" 
-              element={
-                <NGODirectory 
-                  onSelectNGO={(ngo) => setSelectedNGOModal(ngo)}
-                />
-              } 
+        <Route 
+          path="/ngo-directory" 
+          element={
+            <NGODirectory 
+              onSelectNGO={(ngo) => setSelectedNGOModal(ngo)}
             />
+          } 
+        />
 
-            <Route 
-              path="/camps-events" 
-              element={
-                <CampsEvents 
-                  onOpenPostEventModal={() => setShowPostEventModal(true)}
-                  onOpenVolunteerModal={() => setShowVolunteerModal(true)}
-                />
-              } 
+        <Route 
+          path="/camps-events" 
+          element={
+            <CampsEvents 
+              onOpenPostEventModal={() => setShowPostEventModal(true)}
+              onOpenVolunteerModal={() => setShowVolunteerModal(true)}
             />
+          } 
+        />
 
-            <Route path="/volunteer" element={<Volunteer />} />
+        <Route path="/volunteer" element={<Volunteer />} />
+        <Route path="/donate" element={<Donate />} />
+        <Route path="/find-help" element={<FindHelp />} />
+        <Route path="/my-activity" element={<MyActivity />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/settings" element={<Settings />} />
 
-            <Route path="/donate" element={<Donate />} />
-
-            <Route path="/find-help" element={<FindHelp />} />
-
-            <Route path="/my-activity" element={<MyActivity />} />
-
-            <Route path="/notifications" element={<Notifications />} />
-
-            <Route path="/settings" element={<Settings />} />
-
-            <Route 
-              path="/search" 
-              element={
-                <SearchResults 
-                  onSelectNGO={(ngo) => setSelectedNGOModal(ngo)}
-                />
-              } 
+        <Route 
+          path="/search" 
+          element={
+            <SearchResults 
+              onSelectNGO={(ngo) => setSelectedNGOModal(ngo)}
             />
+          } 
+        />
 
-            {/* STRICT PROTECTED ADMIN ROUTE */}
-            <Route element={<AdminProtectedRoute />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-            </Route>
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Route>
 
-          </Route>
-        </Route>
-
-        {/* Catch-all Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-
-      </Routes>
-    </AuthProvider>
+      {/* Catch-all Fallback -> Redirect to Home Dashboard */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }

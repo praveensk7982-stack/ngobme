@@ -33,22 +33,32 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to save OTP' });
   }
 
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-  });
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
+    });
 
-  await transporter.sendMail({
-    from: process.env.SMTP_USER,
-    to: email,
-    subject: 'Your OTP Code - Tamil Nadu NGO Connect',
-    text: `Your verification code is: ${otp}. It expires in 5 minutes.`
-  });
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: email,
+      subject: 'Your OTP Code - Tamil Nadu NGO Connect',
+      text: `Your verification code is: ${otp}. It expires in 5 minutes.`
+    });
 
-  return res.status(200).json({ success: true, message: 'OTP sent' });
+    return res.status(200).json({ success: true, message: 'OTP sent' });
+
+  } catch (mailErr) {
+    console.error('SMTP send error:', mailErr);
+    // OTP already Supabase-ல save ஆயிடுச்சு, ஆனா email அனுப்ப முடியல
+    return res.status(500).json({ error: 'Failed to send OTP email. Please try again.' });
+  }
 }

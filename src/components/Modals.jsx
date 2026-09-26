@@ -392,10 +392,33 @@ export function RegisterNGOModal({ onClose }) {
 
 export function PostEventModal({ onClose }) {
   const [submitted, setSubmitted] = useState(false);
+  const [activeLangTab, setActiveLangTab] = useState('en');
+  const [formData, setFormData] = useState({
+    title_en: '',
+    title_ta: '',
+    title_hi: '',
+    category: 'Medical & Health Camp',
+    camp_type: 'private',
+    location_en: '',
+    location_ta: '',
+    location_hi: '',
+    description_en: '',
+    description_ta: '',
+    description_hi: ''
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitted(true);
+    setTimeout(onClose, 2500);
+  };
+
+  const isTaIncomplete = !formData.title_ta.trim() || !formData.location_ta.trim() || !formData.description_ta.trim();
+  const isHiIncomplete = !formData.title_hi.trim() || !formData.location_hi.trim() || !formData.description_hi.trim();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-slate-200 relative">
+      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-slate-200 relative max-h-[90vh] overflow-y-auto">
         <button onClick={onClose} className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 rounded-full">
           <X className="w-5 h-5" />
         </button>
@@ -406,7 +429,7 @@ export function PostEventModal({ onClose }) {
           </div>
           <div>
             <h2 className="text-lg font-extrabold text-slate-900">Post Event or Camp</h2>
-            <p className="text-xs text-slate-500 font-medium">Broadcast your upcoming drive across TN</p>
+            <p className="text-xs text-slate-500 font-medium">Broadcast your upcoming drive across TN in multiple languages</p>
           </div>
         </div>
 
@@ -414,28 +437,206 @@ export function PostEventModal({ onClose }) {
           <div className="p-6 text-center space-y-3">
             <CheckCircle2 className="w-12 h-12 text-purple-600 mx-auto" />
             <h3 className="text-base font-bold">Event Published!</h3>
-            <p className="text-xs text-slate-600">Your camp is now live on the TN NGO Connect home feed.</p>
+            <p className="text-xs text-slate-600">Your camp is now live with multi-language support on TN NGO Connect.</p>
           </div>
         ) : (
-          <form onSubmit={(e) => { e.preventDefault(); setSubmitted(true); setTimeout(onClose, 2500); }} className="space-y-3 text-xs font-semibold">
-            <div>
-              <label className="text-slate-600 block mb-1">Event Title</label>
-              <input required type="text" placeholder="e.g. Blood Donation Camp 2026" className="w-full px-3.5 py-2 rounded-xl border border-slate-300" />
+          <form onSubmit={handleSubmit} className="space-y-4 text-xs font-semibold">
+            
+            {/* Category & Camp Type */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-slate-600 block mb-1">Event Category</label>
+                <select 
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-purple-600"
+                >
+                  <option>Medical & Health Camp</option>
+                  <option>Blood & Plasma Drive</option>
+                  <option>Tree Plantation & Eco Drive</option>
+                  <option>Food & Ration Distribution</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-slate-600 block mb-1">Organizer Type</label>
+                <select 
+                  value={formData.camp_type}
+                  onChange={(e) => setFormData({...formData, camp_type: e.target.value})}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white focus:outline-none focus:border-purple-600"
+                >
+                  <option value="government">Government Camp</option>
+                  <option value="private">NGO / Private Camp</option>
+                </select>
+              </div>
             </div>
+
+            {/* Language Selector Tabs */}
             <div>
-              <label className="text-slate-600 block mb-1">Event Category</label>
-              <select className="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white">
-                <option>Medical & Health Camp</option>
-                <option>Blood & Plasma Drive</option>
-                <option>Tree Plantation & Eco Drive</option>
-                <option>Food & Ration Distribution</option>
-              </select>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-slate-700 font-bold">Multilingual Information</label>
+                <span className="text-[10px] text-slate-400 font-medium">Fill all languages for full accessibility</span>
+              </div>
+
+              <div className="flex p-1 bg-slate-100 rounded-xl gap-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveLangTab('en')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                    activeLangTab === 'en' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  🇬🇧 English <span className="text-[10px] text-rose-500">*</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveLangTab('ta')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                    activeLangTab === 'ta' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  🇮🇳 தமிழ் (Tamil) {isTaIncomplete && <span className="w-2 h-2 rounded-full bg-amber-500" title="Incomplete"></span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveLangTab('hi')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${
+                    activeLangTab === 'hi' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  🇮🇳 हिंदी (Hindi) {isHiIncomplete && <span className="w-2 h-2 rounded-full bg-amber-500" title="Incomplete"></span>}
+                </button>
+              </div>
             </div>
-            <div>
-              <label className="text-slate-600 block mb-1">Venue Location & District</label>
-              <input required type="text" placeholder="GH Grounds, Coimbatore" className="w-full px-3.5 py-2 rounded-xl border border-slate-300" />
-            </div>
-            <button type="submit" className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md mt-2">
+
+            {/* Tab 1: English */}
+            {activeLangTab === 'en' && (
+              <div className="space-y-3 p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100">
+                <div>
+                  <label className="text-slate-700 block mb-1">Event Title (English) *</label>
+                  <input 
+                    required 
+                    type="text" 
+                    placeholder="e.g. Free Eye Checkup Camp 2026" 
+                    value={formData.title_en}
+                    onChange={(e) => setFormData({...formData, title_en: e.target.value})}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-purple-600" 
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 block mb-1">Venue Location & District (English) *</label>
+                  <input 
+                    required 
+                    type="text" 
+                    placeholder="GH Grounds, Coimbatore" 
+                    value={formData.location_en}
+                    onChange={(e) => setFormData({...formData, location_en: e.target.value})}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-purple-600" 
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 block mb-1">Description (English)</label>
+                  <textarea 
+                    rows="2"
+                    placeholder="Brief description of the camp..." 
+                    value={formData.description_en}
+                    onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-purple-600 resize-none" 
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: Tamil */}
+            {activeLangTab === 'ta' && (
+              <div className="space-y-3 p-3.5 rounded-2xl bg-amber-50/50 border border-amber-100">
+                <div>
+                  <label className="text-slate-700 block mb-1">Event Title (தமிழ்)</label>
+                  <input 
+                    type="text" 
+                    placeholder="எ.கா. இலவசக் கண் பரிசோதனை முகாம் 2026" 
+                    value={formData.title_ta}
+                    onChange={(e) => setFormData({...formData, title_ta: e.target.value})}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-purple-600" 
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 block mb-1">Venue Location & District (தமிழ்)</label>
+                  <input 
+                    type="text" 
+                    placeholder="அரசு மருத்துவமனை மைதானம், கோயம்புத்தூர்" 
+                    value={formData.location_ta}
+                    onChange={(e) => setFormData({...formData, location_ta: e.target.value})}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-purple-600" 
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 block mb-1">Description (தமிழ்)</label>
+                  <textarea 
+                    rows="2"
+                    placeholder="முகாம் பற்றிய சுருக்கமான விவரம்..." 
+                    value={formData.description_ta}
+                    onChange={(e) => setFormData({...formData, description_ta: e.target.value})}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-purple-600 resize-none" 
+                  />
+                </div>
+                {isTaIncomplete && (
+                  <p className="text-[11px] text-amber-700 bg-amber-100/70 p-2 rounded-lg font-medium">
+                    ⚠️ Tamil fields left blank will fallback to English text for Tamil users.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Tab 3: Hindi */}
+            {activeLangTab === 'hi' && (
+              <div className="space-y-3 p-3.5 rounded-2xl bg-blue-50/50 border border-blue-100">
+                <div>
+                  <label className="text-slate-700 block mb-1">Event Title (हिंदी)</label>
+                  <input 
+                    type="text" 
+                    placeholder="उदा. निःशुल्क नेत्र जांच शिविर 2026" 
+                    value={formData.title_hi}
+                    onChange={(e) => setFormData({...formData, title_hi: e.target.value})}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-purple-600" 
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 block mb-1">Venue Location & District (हिंदी)</label>
+                  <input 
+                    type="text" 
+                    placeholder="सरकारी अस्पताल मैदान, कोयंबटूर" 
+                    value={formData.location_hi}
+                    onChange={(e) => setFormData({...formData, location_hi: e.target.value})}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-purple-600" 
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 block mb-1">Description (हिंदी)</label>
+                  <textarea 
+                    rows="2"
+                    placeholder="शिविर का संक्षिप्त विवरण..." 
+                    value={formData.description_hi}
+                    onChange={(e) => setFormData({...formData, description_hi: e.target.value})}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-purple-600 resize-none" 
+                  />
+                </div>
+                {isHiIncomplete && (
+                  <p className="text-[11px] text-blue-700 bg-blue-100/70 p-2 rounded-lg font-medium">
+                    ⚠️ Hindi fields left blank will fallback to English text for Hindi users.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Summary Warnings if Tamil or Hindi is empty */}
+            {(isTaIncomplete || isHiIncomplete) && (
+              <div className="p-2.5 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-medium leading-relaxed">
+                ℹ️ <span className="font-bold text-slate-700">Multilingual Fallback Active:</span> {isTaIncomplete && isHiIncomplete ? 'Tamil and Hindi' : isTaIncomplete ? 'Tamil' : 'Hindi'} translations missing. English content will be displayed.
+              </div>
+            )}
+
+            <button type="submit" className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md mt-2 transition">
               Publish Event Now
             </button>
           </form>

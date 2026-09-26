@@ -14,7 +14,12 @@
     "notifications": "सूचनाएं",
     "signOut": "साइन आउट",
     "verifiedVolunteer": "सत्यापित स्वयंसेवक",
-    "verifiedVolunteerLead": "सत्यापित स्वयंसेवक प्रमुख"
+    "verifiedVolunteerLead": "सत्यापित स्वयंसेवक प्रमुख",
+    "govtRegistered": "100% सरकारी पंजीकृत एनजीओ",
+    "liveUpdates": "38 जिलों में लाइव अपडेट",
+    "viewAll": "सभी देखें →",
+    "cancel": "रद्द करें",
+    "submit": "जमा करें"
   },
   "nav": {
     "home": "होम",
@@ -28,6 +33,57 @@
     "settings": "सेटिंग्स",
     "adminConsole": "एडमिन कंसोल",
     "prideTagline": "मजबूत समुदाय, स्वस्थ तमिलनाडु"
+  },
+  "stats": {
+    "ngosTitle": "कुल पंजीकृत एनजीओ",
+    "ngosChange": "+12.4% इस महीने",
+    "campsTitle": "आगामी शिविर और कार्यक्रम",
+    "campsChange": "आज 48 कार्यक्रम निर्धारित",
+    "volunteersTitle": "सक्रिय स्वयंसेवक",
+    "volunteersChange": "38 जिलों में",
+    "donationsTitle": "दान अभियान",
+    "donationsChange": "2026 में ₹4.2 करोड़ जुटाए गए"
+  },
+  "categories": {
+    "exploreByCategory": "श्रेणी के अनुसार खोजें",
+    "subtext": "सेवा क्षेत्र के अनुसार एनजीओ और शिविर खोजें",
+    "medical": "चिकित्सा और स्वास्थ्य",
+    "education": "शिक्षा",
+    "food": "भोजन और पोषण",
+    "environment": "पर्यावरण",
+    "blood": "रक्तदान",
+    "womenChild": "महिला एवं बाल कल्याण",
+    "elderly": "बुजुर्गों की देखभाल",
+    "disability": "दिव्यांग सहायता"
+  },
+  "campsWidget": {
+    "upcomingCamps": "आगामी शिविर और कार्यक्रम",
+    "subtext": "अपने क्षेत्र में आगामी अभियानों में शामिल हों",
+    "allCamps": "सभी शिविर",
+    "govtCamps": "सरकारी शिविर",
+    "privateCamps": "निजी शिविर",
+    "govtCamp": "सरकारी शिविर",
+    "privateCamp": "निजी शिविर",
+    "spotsLeft": "स्थान शेष",
+    "organizedBy": "आयोजक:",
+    "registerForCamp": "इस शिविर के लिए पंजीकरण करें",
+    "viewAndRegister": "देखें और पंजीकृत करें"
+  },
+  "quickActions": {
+    "title": "त्वरित कार्य",
+    "registerVolunteer": "स्वयंसेवक के रूप में पंजीकरण करें",
+    "registerVolunteerSub": "स्थानीय अभियानों में शामिल हों",
+    "makeDonation": "दान करें",
+    "makeDonationSub": "80G कर छूट",
+    "addNgo": "एनजीओ जोड़ें / पंजीकृत करें",
+    "addNgoSub": "मुफ्त डायरेक्टरी लिस्टिंग",
+    "postEvent": "कार्यक्रम / शिविर पोस्ट करें",
+    "postEventSub": "स्वयंसेवकों को जुटाएं"
+  },
+  "pride": {
+    "tnPride": "तमिलनाडु गौरव",
+    "verifiedNetwork": "सत्यापित एनजीओ नेटवर्क",
+    "quote": "एक साथ मिलकर हम बदलाव ला सकते हैं"
   },
   "auth": {
     "login": "लॉग इन करें",

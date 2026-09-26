@@ -14,7 +14,12 @@
     "notifications": "Notifications",
     "signOut": "Sign Out",
     "verifiedVolunteer": "Verified Volunteer",
-    "verifiedVolunteerLead": "Verified Volunteer Lead"
+    "verifiedVolunteerLead": "Verified Volunteer Lead",
+    "govtRegistered": "100% Government Registered NGOs",
+    "liveUpdates": "Live Updates Across 38 TN Districts",
+    "viewAll": "View All →",
+    "cancel": "Cancel",
+    "submit": "Submit"
   },
   "nav": {
     "home": "Home",
@@ -28,6 +33,57 @@
     "settings": "Settings",
     "adminConsole": "Admin Console",
     "prideTagline": "Stronger Communities, Healthier Tamil Nadu"
+  },
+  "stats": {
+    "ngosTitle": "Total NGOs Registered",
+    "ngosChange": "+12.4% this month",
+    "campsTitle": "Upcoming Camps & Events",
+    "campsChange": "48 scheduled today",
+    "volunteersTitle": "Active Volunteers",
+    "volunteersChange": "Across 38 districts",
+    "donationsTitle": "Donation Drives",
+    "donationsChange": "₹4.2Cr raised in 2026"
+  },
+  "categories": {
+    "exploreByCategory": "Explore by Category",
+    "subtext": "Find NGOs and volunteer drives by cause",
+    "medical": "Medical & Health",
+    "education": "Education",
+    "food": "Food & Nutrition",
+    "environment": "Environment",
+    "blood": "Blood Donation",
+    "womenChild": "Women & Child",
+    "elderly": "Elderly Care",
+    "disability": "Disability Support"
+  },
+  "campsWidget": {
+    "upcomingCamps": "Upcoming Camps & Events",
+    "subtext": "Join upcoming drives in your region",
+    "allCamps": "All Camps",
+    "govtCamps": "Government Camps",
+    "privateCamps": "Private Camps",
+    "govtCamp": "Govt Camp",
+    "privateCamp": "Private Camp",
+    "spotsLeft": "spots left",
+    "organizedBy": "Organized by",
+    "registerForCamp": "Register for this Camp",
+    "viewAndRegister": "View & Register"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "registerVolunteer": "Register as Volunteer",
+    "registerVolunteerSub": "Join Local Drives",
+    "makeDonation": "Make a Donation",
+    "makeDonationSub": "Direct 80G Tax Relief",
+    "addNgo": "Add / Register NGO",
+    "addNgoSub": "Free Directory Listing",
+    "postEvent": "Post Event / Camp",
+    "postEventSub": "Mobilize Volunteers"
+  },
+  "pride": {
+    "tnPride": "Tamil Nadu Pride",
+    "verifiedNetwork": "Verified NGO Network",
+    "quote": "Together we can make a difference"
   },
   "auth": {
     "login": "Login",

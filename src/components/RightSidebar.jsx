@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Calendar, 
   ChevronRight, 
@@ -13,6 +14,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { UPCOMING_EVENTS } from '../data/mockData';
+import { getLocalizedField, formatDate } from '../utils/i18nHelpers';
 import CampDetailsModal from './CampDetailsModal';
 
 export default function RightSidebar({ 
@@ -21,6 +23,7 @@ export default function RightSidebar({
   onOpenRegisterNGOModal, 
   onOpenPostEventModal
 }) {
+  const { t, i18n } = useTranslation();
   const [selectedCamp, setSelectedCamp] = useState(null);
   const [registeredEvents, setRegisteredEvents] = useState([]);
 
@@ -39,9 +42,9 @@ export default function RightSidebar({
           <div>
             <h2 className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-blue-600" />
-              Upcoming Camps & Events
+              {t('campsWidget.upcomingCamps')}
             </h2>
-            <p className="text-[11px] text-slate-500 font-medium">Join upcoming drives in your region</p>
+            <p className="text-[11px] text-slate-500 font-medium">{t('campsWidget.subtext')}</p>
           </div>
         </div>
 
@@ -49,6 +52,9 @@ export default function RightSidebar({
         <div className="space-y-3">
           {UPCOMING_EVENTS.slice(0, 4).map((evt) => {
             const isGovt = evt.camp_type === 'government';
+            const title = getLocalizedField(evt, 'title', i18n.language) || evt.title;
+            const location = getLocalizedField(evt, 'location', i18n.language) || evt.location;
+            const org = getLocalizedField(evt, 'org', i18n.language) || evt.org;
 
             return (
               <div
@@ -62,11 +68,11 @@ export default function RightSidebar({
                     {/* Govt vs Private Camp Badge */}
                     {isGovt ? (
                       <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-0.5">
-                        <ShieldCheck className="w-2.5 h-2.5 text-blue-600" /> Govt
+                        <ShieldCheck className="w-2.5 h-2.5 text-blue-600" /> {t('campsWidget.govtCamp')}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-0.5">
-                        <Building2 className="w-2.5 h-2.5 text-purple-600" /> Private
+                        <Building2 className="w-2.5 h-2.5 text-purple-600" /> {t('campsWidget.privateCamp')}
                       </span>
                     )}
 
@@ -80,12 +86,12 @@ export default function RightSidebar({
 
                 {/* Event Title */}
                 <h3 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition leading-snug mb-1">
-                  {evt.title}
+                  {title}
                 </h3>
 
                 {/* Organization */}
                 <p className="text-[11px] font-medium text-slate-600 mb-2">
-                  by <span className="font-semibold text-slate-700">{evt.org}</span>
+                  {t('campsWidget.organizedBy')} <span className="font-semibold text-slate-700">{org}</span>
                 </p>
 
                 {/* Date/Time & Location */}
@@ -93,11 +99,11 @@ export default function RightSidebar({
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3 text-blue-600 shrink-0" />
-                      <span>{evt.date}</span>
+                      <span>{formatDate(evt.date, i18n.language)}</span>
                     </div>
                     <div className="flex items-center gap-1 text-slate-600">
                       <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="truncate max-w-[170px]">{evt.location}</span>
+                      <span className="truncate max-w-[170px]">{location}</span>
                     </div>
                   </div>
 
@@ -115,7 +121,7 @@ export default function RightSidebar({
       <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200/80">
         <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-3.5 flex items-center gap-1.5">
           <Sparkles className="w-4 h-4 text-amber-500" />
-          Quick Actions
+          {t('quickActions.title')}
         </h2>
 
         <div className="grid grid-cols-2 gap-3">
@@ -128,8 +134,8 @@ export default function RightSidebar({
               <UserPlus className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs font-bold text-blue-950 leading-tight">Register as Volunteer</p>
-              <span className="text-[10px] font-semibold text-blue-700 block mt-0.5">Join Local Drives</span>
+              <p className="text-xs font-bold text-blue-950 leading-tight">{t('quickActions.registerVolunteer')}</p>
+              <span className="text-[10px] font-semibold text-blue-700 block mt-0.5">{t('quickActions.registerVolunteerSub')}</span>
             </div>
           </button>
 
@@ -141,8 +147,8 @@ export default function RightSidebar({
               <HeartHandshake className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs font-bold text-emerald-950 leading-tight">Make a Donation</p>
-              <span className="text-[10px] font-semibold text-emerald-700 block mt-0.5">Direct 80G Tax Relief</span>
+              <p className="text-xs font-bold text-emerald-950 leading-tight">{t('quickActions.makeDonation')}</p>
+              <span className="text-[10px] font-semibold text-emerald-700 block mt-0.5">{t('quickActions.makeDonationSub')}</span>
             </div>
           </button>
 
@@ -154,8 +160,8 @@ export default function RightSidebar({
               <Building2 className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs font-bold text-amber-950 leading-tight">Add / Register NGO</p>
-              <span className="text-[10px] font-semibold text-amber-700 block mt-0.5">Free Directory Listing</span>
+              <p className="text-xs font-bold text-amber-950 leading-tight">{t('quickActions.addNgo')}</p>
+              <span className="text-[10px] font-semibold text-amber-700 block mt-0.5">{t('quickActions.addNgoSub')}</span>
             </div>
           </button>
 
@@ -167,8 +173,8 @@ export default function RightSidebar({
               <PlusCircle className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs font-bold text-purple-950 leading-tight">Post Event / Camp</p>
-              <span className="text-[10px] font-semibold text-purple-700 block mt-0.5">Mobilize Volunteers</span>
+              <p className="text-xs font-bold text-purple-950 leading-tight">{t('quickActions.postEvent')}</p>
+              <span className="text-[10px] font-semibold text-purple-700 block mt-0.5">{t('quickActions.postEventSub')}</span>
             </div>
           </button>
 
@@ -202,7 +208,20 @@ export default function RightSidebar({
         </div>
       </div>
 
-      {/* Clickable Modal for Home Page Upcoming Camps widget */}
+      {/* 4. Tamil Nadu Pride Card */}
+      <div className="bg-gradient-to-b from-[#0f1e3d] to-[#16284e] rounded-3xl p-5 text-white text-center shadow-lg relative overflow-hidden border border-blue-900/40">
+        <p className="text-xs font-bold text-amber-300 tracking-wide mb-1">
+          {t('pride.tnPride')}
+        </p>
+        <p className="text-[11px] text-slate-300 font-medium leading-normal">
+          {t('pride.quote')}
+        </p>
+        <div className="mt-2.5 pt-2 border-t border-slate-700/60 w-full flex items-center justify-center gap-1 text-[10px] text-blue-200/90 font-medium">
+          <ShieldCheck className="w-3 h-3 text-emerald-400" /> {t('pride.verifiedNetwork')}
+        </div>
+      </div>
+
+      {/* Clickable Modal */}
       {selectedCamp && (
         <CampDetailsModal
           camp={selectedCamp}

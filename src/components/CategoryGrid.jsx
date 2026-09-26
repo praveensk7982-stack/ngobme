@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Stethoscope, 
   GraduationCap, 
@@ -11,6 +12,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { CATEGORIES } from '../data/mockData';
+import { getLocalizedField } from '../utils/i18nHelpers';
 
 const CATEGORY_ICONS = {
   Stethoscope,
@@ -24,6 +26,26 @@ const CATEGORY_ICONS = {
 };
 
 export default function CategoryGrid({ selectedCategory, setSelectedCategory, onCategoryClick }) {
+  const { t, i18n } = useTranslation();
+
+  const getCategoryTranslation = (cat) => {
+    const keyMap = {
+      medical: 'categories.medical',
+      education: 'categories.education',
+      food: 'categories.food',
+      environment: 'categories.environment',
+      blood: 'categories.blood',
+      women_child: 'categories.womenChild',
+      elderly: 'categories.elderly',
+      disability: 'categories.disability'
+    };
+
+    if (keyMap[cat.id]) {
+      return t(keyMap[cat.id]);
+    }
+    return getLocalizedField(cat, 'name', i18n.language) || cat.name;
+  };
+
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80">
       
@@ -31,21 +53,21 @@ export default function CategoryGrid({ selectedCategory, setSelectedCategory, on
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            Explore by Category
+            {t('categories.exploreByCategory')}
           </h2>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">Find NGOs and volunteer drives by cause</p>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">{t('categories.subtext')}</p>
         </div>
 
         <button 
           onClick={() => setSelectedCategory(null)}
           className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition group"
         >
-          <span>View All (24)</span>
+          <span>{t('common.viewAll')}</span>
           <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
         </button>
       </div>
 
-      {/* 2x4 Grid of Colored Cards */}
+      {/* Grid of Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
         {CATEGORIES.map((cat) => {
           const IconComponent = CATEGORY_ICONS[cat.icon] || Stethoscope;
@@ -74,7 +96,7 @@ export default function CategoryGrid({ selectedCategory, setSelectedCategory, on
               {/* Title & Count */}
               <div>
                 <h3 className="text-xs font-bold leading-tight group-hover:text-slate-900 transition">
-                  {cat.name}
+                  {getCategoryTranslation(cat)}
                 </h3>
                 <p className="text-[11px] font-semibold opacity-75 mt-0.5">
                   {cat.count}

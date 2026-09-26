@@ -185,29 +185,32 @@ export default function Login({ defaultTab = 'login' }) {
       return;
     }
 
-    // Step 1 Check: Verify if email is already registered in Firebase Auth before sending OTP
     setLoading(true);
     setLoadingText('Checking email...');
 
+    // 1. Check if email is already registered in Firebase Auth
+    let isRegistered = false;
     try {
       const methods = await fetchSignInMethodsForEmail(auth, cleanEmail);
       if (methods && methods.length > 0) {
-        setEmailRegisteredError(true);
-        setError('This email is already registered. Please login instead.');
-        setLoading(false);
-        setLoadingText('');
-        return;
+        isRegistered = true;
       }
     } catch (err) {
-      console.error('Error checking existing email in Firebase Auth:', err);
+      console.error('Error checking if email exists in Firebase Auth:', err);
     }
 
+    if (isRegistered) {
+      setEmailRegisteredError(true);
+      setError('This email is already registered. Please login instead.');
+      setLoading(false);
+      setLoadingText('');
+      return; // STOP HERE — do not proceed further or advance step
+    }
+
+    // 2. Only reached if email is NOT registered:
     setLoadingText('Sending OTP...');
 
     try {
-      // NOTE for Backend Cloud Function:
-      // Before generating and emailing a new OTP, the backend Cloud Function should also verify via Firebase Admin SDK (admin.auth().getUserByEmail(email))
-      // whether the user already exists, and reject the request with { success: false, message: "Email already registered" } if so.
       const res = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

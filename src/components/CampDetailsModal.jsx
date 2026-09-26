@@ -16,8 +16,11 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { getLocalizedField, formatDate } from '../utils/i18nHelpers';
 
 export default function CampDetailsModal({ camp, onClose, onRegisterSuccess }) {
+  const { t, i18n } = useTranslation();
   const { user: authUser } = useAuth();
 
   const [showRegForm, setShowRegForm] = useState(false);
@@ -146,15 +149,15 @@ export default function CampDetailsModal({ camp, onClose, onRegisterSuccess }) {
             )}
 
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/20 text-white">
-              {camp.category} Camp
+              {t(`categoryBadges.${camp.category}`, camp.category)} {t('campsWidget.campSuffix', 'Camp')}
             </span>
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-snug">
-            {camp.title}
+            {getLocalizedField(camp, 'title', i18n.language) || camp.title}
           </h2>
           <p className="text-xs text-blue-100/90 font-medium mt-1">
-            Organized by <span className="font-bold text-white">{camp.org}</span>
+            {t('campsWidget.organizedBy')} <span className="font-bold text-white">{getLocalizedField(camp, 'org', i18n.language) || camp.org}</span>
           </p>
         </div>
 

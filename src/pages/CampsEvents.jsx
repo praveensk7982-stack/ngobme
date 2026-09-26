@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Calendar, 
   PlusCircle, 
@@ -11,15 +12,17 @@ import {
   Building2 
 } from 'lucide-react';
 import { UPCOMING_EVENTS } from '../data/mockData';
+import { getLocalizedField, formatDate } from '../utils/i18nHelpers';
 import CampDetailsModal from '../components/CampDetailsModal';
 
 export default function CampsEvents({ onOpenPostEventModal }) {
+  const { t, i18n } = useTranslation();
   const [campTypeFilter, setCampTypeFilter] = useState('all'); // 'all' | 'government' | 'private'
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
   const [selectedCamp, setSelectedCamp] = useState(null);
   const [registeredEvents, setRegisteredEvents] = useState([]);
 
-  const categories = ['All', 'Medical', 'Blood', 'Health', 'Environment'];
+  const categories = ['All', 'Medical', 'Blood', 'Health', 'Environment', 'Education', 'Food'];
 
   // Filter events by both camp_type and category
   const filteredEvents = UPCOMING_EVENTS.filter(evt => {
@@ -34,6 +37,17 @@ export default function CampsEvents({ onOpenPostEventModal }) {
     }
   };
 
+  const getCategoryFilterLabel = (cat) => {
+    if (cat === 'All') return t('campsPage.filterAll');
+    if (cat === 'Medical') return t('campsPage.filterMedical');
+    if (cat === 'Blood') return t('campsPage.filterBlood');
+    if (cat === 'Health') return t('campsPage.filterHealth');
+    if (cat === 'Environment') return t('campsPage.filterEnvironment');
+    if (cat === 'Education') return t('campsPage.filterEducation');
+    if (cat === 'Food') return t('campsPage.filterFood');
+    return t(`categoryBadges.${cat}`, cat) + ' ' + t('campsPage.campsSuffix', 'Camps');
+  };
+
   return (
     <div className="space-y-6">
       
@@ -43,14 +57,14 @@ export default function CampsEvents({ onOpenPostEventModal }) {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-3 border border-emerald-200">
               <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-              <span>1,258+ Upcoming Camps Active Across Tamil Nadu</span>
+              <span>{t('campsPage.activeCampsBadge')}</span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Community Camps & Social Events
+              {t('campsPage.title')}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
-              Find free health screening drives, blood donation camps, environmental cleanups, and educational seminars happening near you.
+              {t('campsPage.subtitle')}
             </p>
           </div>
 
@@ -59,7 +73,7 @@ export default function CampsEvents({ onOpenPostEventModal }) {
             className="px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 shrink-0 active:scale-95"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>Post an Event / Camp</span>
+            <span>{t('campsPage.postEvent')}</span>
           </button>
         </div>
 
@@ -74,7 +88,7 @@ export default function CampsEvents({ onOpenPostEventModal }) {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            All Camps
+            {t('campsPage.allCamps')}
           </button>
 
           <button
@@ -87,7 +101,7 @@ export default function CampsEvents({ onOpenPostEventModal }) {
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Government Camps</span>
+            <span>{t('campsPage.govtCamps')}</span>
           </button>
 
           <button
@@ -100,13 +114,13 @@ export default function CampsEvents({ onOpenPostEventModal }) {
             }`}
           >
             <Building2 className="w-3.5 h-3.5" />
-            <span>Private Camps</span>
+            <span>{t('campsPage.privateCamps')}</span>
           </button>
         </div>
 
         {/* 2. Category Pills Filter */}
         <div className="mt-4 flex flex-wrap items-center gap-2 pt-4 border-t border-slate-100">
-          <span className="text-xs font-bold text-slate-500 mr-2">Category:</span>
+          <span className="text-xs font-bold text-slate-500 mr-2">{t('campsPage.categoryLabel')}</span>
           {categories.map((cat) => (
             <button
               key={cat}
@@ -117,7 +131,7 @@ export default function CampsEvents({ onOpenPostEventModal }) {
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              {cat} {cat !== 'All' ? 'Camps' : ''}
+              {getCategoryFilterLabel(cat)}
             </button>
           ))}
         </div>
@@ -128,6 +142,9 @@ export default function CampsEvents({ onOpenPostEventModal }) {
         {filteredEvents.map((evt) => {
           const isRegistered = registeredEvents.includes(evt.id);
           const isGovt = evt.camp_type === 'government';
+          const title = getLocalizedField(evt, 'title', i18n.language) || evt.title;
+          const location = getLocalizedField(evt, 'location', i18n.language) || evt.location;
+          const org = getLocalizedField(evt, 'org', i18n.language) || evt.org;
 
           return (
             <div
@@ -142,43 +159,43 @@ export default function CampsEvents({ onOpenPostEventModal }) {
                     {/* Camp Type Badge */}
                     {isGovt ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-300 flex items-center gap-1">
-                        <ShieldCheck className="w-3 h-3 text-blue-600" /> Govt Camp
+                        <ShieldCheck className="w-3 h-3 text-blue-600" /> {t('campsPage.govtCampBadge')}
                       </span>
                     ) : (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800 border border-purple-300 flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-purple-600" /> Private Camp
+                        <Building2 className="w-3 h-3 text-purple-600" /> {t('campsPage.privateCampBadge')}
                       </span>
                     )}
 
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${evt.categoryColor}`}>
-                      {evt.category}
+                      {t(`categoryBadges.${evt.category}`, evt.category)}
                     </span>
                   </div>
 
                   <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2.5 py-0.5 rounded-full shrink-0">
-                    {evt.spots}
+                    {evt.spots_available ? `${evt.spots_available} ${t('campsWidget.spotsLeft', 'spots left')}` : evt.spots}
                   </span>
                 </div>
 
                 {/* Event Title */}
                 <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition leading-snug mb-2">
-                  {evt.title}
+                  {title}
                 </h3>
 
                 {/* Organizer */}
                 <p className="text-xs text-slate-600 font-medium mb-3">
-                  Organized by <span className="font-bold text-slate-800">{evt.org}</span>
+                  {t('campsPage.organizedBy')} <span className="font-bold text-slate-800">{org}</span>
                 </p>
 
                 {/* Details Box */}
                 <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2 text-xs text-slate-600 font-semibold mb-4">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span>{evt.date}</span>
+                    <span>{formatDate(evt.date, i18n.language)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
-                    <span>{evt.location} ({evt.district})</span>
+                    <span>{location} ({evt.district})</span>
                   </div>
                 </div>
               </div>
@@ -188,7 +205,7 @@ export default function CampsEvents({ onOpenPostEventModal }) {
                 {isRegistered ? (
                   <div className="w-full py-2.5 rounded-xl bg-emerald-50 text-emerald-800 font-bold text-xs border border-emerald-200 flex items-center justify-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Registered • View Pass</span>
+                    <span>{t('campsPage.registeredPass')}</span>
                   </div>
                 ) : (
                   <button
@@ -199,7 +216,7 @@ export default function CampsEvents({ onOpenPostEventModal }) {
                     }}
                     className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 active:scale-95"
                   >
-                    <span>View & Register</span>
+                    <span>{t('campsPage.viewAndRegister')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 )}

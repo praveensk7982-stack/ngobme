@@ -77,7 +77,7 @@ export default function RightSidebar({
                     )}
 
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${evt.categoryColor}`}>
-                      {evt.category}
+                      {t(`categoryBadges.${evt.category}`, evt.category)}
                     </span>
                   </div>
 

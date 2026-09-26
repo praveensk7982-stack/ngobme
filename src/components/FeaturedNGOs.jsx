@@ -50,7 +50,7 @@ export default function FeaturedNGOs({ onSelectNGO, selectedDistrict }) {
                   </div>
 
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${ngo.categoryTagColor}`}>
-                    {ngo.category}
+                    {t(`categoryBadges.${ngo.category}`, ngo.category)}
                   </span>
                 </div>
 

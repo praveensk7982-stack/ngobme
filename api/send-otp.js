@@ -17,10 +17,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Email required' });
   }
 
-  // ✅ Check if email already registered in Firebase (Admin SDK)
   try {
     await admin.auth().getUserByEmail(email);
-    // No error thrown = user already exists
     return res.status(409).json({
       error: 'This email is already registered. Please login instead.'
     });
@@ -29,7 +27,6 @@ export default async function handler(req, res) {
       console.error('Firebase check error:', err);
       return res.status(500).json({ error: 'Something went wrong. Try again.' });
     }
-    // auth/user-not-found = email NOT registered, safe to continue
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -58,10 +55,29 @@ export default async function handler(req, res) {
     });
 
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `"Tamil Nadu NGO Connect" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Your OTP Code - Tamil Nadu NGO Connect',
-      text: `Your verification code is: ${otp}. It expires in 5 minutes.`
+      subject: 'Your Verification Code - Tamil Nadu NGO Connect',
+      text: `Your verification code is: ${otp}. It expires in 5 minutes.`,
+      html: `
+        <div style="max-width: 480px; margin: 0 auto; font-family: Arial, sans-serif; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
+          <div style="background: linear-gradient(135deg, #0d9488, #0891b2); padding: 24px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 20px;">Tamil Nadu NGO Connect</h1>
+          </div>
+          <div style="padding: 32px 24px; text-align: center;">
+            <p style="color: #334155; font-size: 15px; margin-bottom: 8px;">Hello,</p>
+            <p style="color: #334155; font-size: 15px; margin-bottom: 24px;">Your 6-digit verification code is:</p>
+            <div style="display: inline-block; padding: 16px 32px; background: #f0fdfa; border: 2px dashed #0d9488; border-radius: 10px; margin-bottom: 24px;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0d9488;">${otp}</span>
+            </div>
+            <p style="color: #64748b; font-size: 13px;">This code will expire in <strong>5 minutes</strong>.</p>
+            <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">If you didn't request this code, you can safely ignore this email.</p>
+          </div>
+          <div style="background: #f8fafc; padding: 16px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; font-size: 11px; margin: 0;">Together for a Better Tomorrow — Tamil Nadu NGO Connect</p>
+          </div>
+        </div>
+      `
     });
 
     return res.status(200).json({ success: true, message: 'OTP sent' });

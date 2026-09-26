@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
+import admin from './firebaseAdmin.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -14,6 +15,21 @@ export default async function handler(req, res) {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: 'Email required' });
+  }
+
+  // ✅ NEW: Check if email already registered in Firebase
+  try {
+    await admin.auth().getUserByEmail(email);
+    // No error thrown = user already exists
+    return res.status(409).json({
+      error: 'This email is already registered. Please login instead.'
+    });
+  } catch (err) {
+    if (err.code !== 'auth/user-not-found') {
+      console.error('Firebase check error:', err);
+      return res.status(500).json({ error: 'Something went wrong. Try again.' });
+    }
+    // auth/user-not-found = email NOT registered, safe to continue
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();

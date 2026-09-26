@@ -182,17 +182,22 @@ export default function Login({ defaultTab = 'login' }) {
       return;
     }
 
-    setLoading(true);
-
+    // Check if email is already registered in Firebase Auth before sending OTP
     try {
-      // Check if email is already registered in Firebase Auth before sending OTP
+      setLoading(true);
       const methods = await fetchSignInMethodsForEmail(auth, cleanEmail);
       if (methods && methods.length > 0) {
         setError('This email is already registered. Please login instead.');
         setLoading(false);
         return;
       }
+    } catch (err) {
+      console.error('Error checking existing email in Firebase Auth:', err);
+    }
 
+    setLoading(true);
+
+    try {
       const res = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

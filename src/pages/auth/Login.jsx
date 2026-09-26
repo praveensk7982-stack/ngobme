@@ -200,6 +200,7 @@ export default function Login({ defaultTab = 'login' }) {
     }
 
     if (isRegistered) {
+      setSignupStep(1); // ✅ Force reset to Step 1 so stale Step 2/3 state never shows
       setEmailRegisteredError(true);
       setError('This email is already registered. Please login instead.');
       setLoading(false);
@@ -450,6 +451,8 @@ export default function Login({ defaultTab = 'login' }) {
                 onClick={() => {
                   setActiveTab('login');
                   setError('');
+                  setSignupStep(1); // ✅ Reset signup state when switching tabs
+                  setEmailRegisteredError(false);
                 }}
                 className={`flex-1 py-2 px-4 rounded-xl text-xs font-extrabold transition-all duration-200 text-center ${
                   activeTab === 'login'
@@ -464,6 +467,8 @@ export default function Login({ defaultTab = 'login' }) {
                 onClick={() => {
                   setActiveTab('signup');
                   setError('');
+                  setSignupStep(1); // ✅ Reset signup state when switching tabs
+                  setEmailRegisteredError(false);
                 }}
                 className={`flex-1 py-2 px-4 rounded-xl text-xs font-extrabold transition-all duration-200 text-center ${
                   activeTab === 'signup'
@@ -604,6 +609,8 @@ export default function Login({ defaultTab = 'login' }) {
                     onClick={() => {
                       setActiveTab('signup');
                       setError('');
+                      setSignupStep(1); // ✅ Reset signup state when switching tabs
+                      setEmailRegisteredError(false);
                     }}
                     className="text-xs font-bold text-slate-600 hover:text-teal-700 transition"
                   >

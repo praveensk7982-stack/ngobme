@@ -23,6 +23,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { INITIAL_NOTIFICATIONS, getCombinedSearchData } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
 
 export default function TopBar({ 
   searchQuery, 
@@ -32,7 +33,9 @@ export default function TopBar({
   onOpenDonateModal,
   onClearNotifications
 }) {
-  const user = {
+  const { user: authUser, logout } = useAuth();
+  
+  const user = authUser || {
     name: 'Dharshini Raj',
     email: 'dharshini@ngo-tn.org',
     district: 'Chennai',
@@ -513,6 +516,19 @@ export default function TopBar({
                   >
                     <ShieldCheck className="w-4 h-4 text-amber-500" /> Admin Console
                   </Link>
+                </div>
+
+                <div className="pt-1 border-t border-slate-100">
+                  <button 
+                    onClick={async () => {
+                      setShowUserMenu(false);
+                      await logout();
+                      navigate('/login');
+                    }}
+                    className="w-full px-4 py-2 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 text-xs font-semibold cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-500" /> Sign Out
+                  </button>
                 </div>
               </div>
             )}

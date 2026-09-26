@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
-import admin from './firebaseAdmin.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -17,25 +16,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Email required' });
   }
 
-  // ✅ NEW: Check if email already registered in Firebase
-  try {
-    await admin.auth().getUserByEmail(email);
-    // No error thrown = user already exists
-    return res.status(409).json({
-      error: 'This email is already registered. Please login instead.'
-    });
-  } catch (err) {
-    if (err.code !== 'auth/user-not-found') {
-      console.error('Firebase check error:', err);
-      return res.status(500).json({ error: 'Something went wrong. Try again.' });
-    }
-    // auth/user-not-found = email NOT registered, safe to continue
-  }
-
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-  // பழைய OTP இருந்தா delete பண்ணிட்டு புதுசா insert பண்ணுறது
   await supabase.from('otps').delete().eq('email', email);
 
   const { error: dbError } = await supabase.from('otps').insert({
@@ -69,7 +52,6 @@ export default async function handler(req, res) {
 
   } catch (mailErr) {
     console.error('SMTP send error:', mailErr);
-    // OTP already Supabase-ல save ஆயிடுச்சு, ஆனா email அனுப்ப முடியல
     return res.status(500).json({ error: 'Failed to send OTP email. Please try again.' });
   }
 }

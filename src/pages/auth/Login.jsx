@@ -51,7 +51,9 @@ export default function Login({ defaultTab = 'login' }) {
 
   // Common UI States
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState('');
   const [error, setError] = useState('');
+  const [emailRegisteredError, setEmailRegisteredError] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   // Resend Timer State
@@ -158,10 +160,11 @@ export default function Login({ defaultTab = 'login' }) {
     }
   };
 
-  // SIGNUP STEP 1: SEND OTP (via /api/send-otp -> stored in Supabase, emailed via Nodemailer)
+  // SIGNUP STEP 1: SEND OTP
   const handleSignupStep1 = async (e) => {
     e.preventDefault();
     setError('');
+    setEmailRegisteredError(false);
 
     const cleanName = signupName.trim();
     const cleanEmail = signupEmail.trim().toLowerCase();
@@ -182,22 +185,29 @@ export default function Login({ defaultTab = 'login' }) {
       return;
     }
 
-    // Check if email is already registered in Firebase Auth before sending OTP
+    // Step 1 Check: Verify if email is already registered in Firebase Auth before sending OTP
+    setLoading(true);
+    setLoadingText('Checking email...');
+
     try {
-      setLoading(true);
       const methods = await fetchSignInMethodsForEmail(auth, cleanEmail);
       if (methods && methods.length > 0) {
+        setEmailRegisteredError(true);
         setError('This email is already registered. Please login instead.');
         setLoading(false);
+        setLoadingText('');
         return;
       }
     } catch (err) {
       console.error('Error checking existing email in Firebase Auth:', err);
     }
 
-    setLoading(true);
+    setLoadingText('Sending OTP...');
 
     try {
+      // NOTE for Backend Cloud Function:
+      // Before generating and emailing a new OTP, the backend Cloud Function should also verify via Firebase Admin SDK (admin.auth().getUserByEmail(email))
+      // whether the user already exists, and reject the request with { success: false, message: "Email already registered" } if so.
       const res = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -221,6 +231,7 @@ export default function Login({ defaultTab = 'login' }) {
       setError(err.message || 'Failed to send OTP. Please try again.');
     } finally {
       setLoading(false);
+      setLoadingText('');
     }
   };
 
@@ -718,11 +729,35 @@ export default function Login({ defaultTab = 'login' }) {
                           onChange={(e) => {
                             setSignupEmail(e.target.value);
                             if (error) setError('');
+                            if (emailRegisteredError) setEmailRegisteredError(false);
                           }}
                           placeholder="e.g. yourname@gmail.com"
-                          className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-300 focus:border-teal-600 focus:outline-none text-slate-800"
+                          className={`w-full pl-10 pr-4 py-3 rounded-2xl border ${
+                            emailRegisteredError ? 'border-rose-500 bg-rose-50/20' : 'border-slate-300 focus:border-teal-600'
+                          } focus:outline-none text-slate-800`}
                         />
                       </div>
+
+                      {emailRegisteredError && (
+                        <div className="mt-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-between gap-2 animate-in fade-in">
+                          <div className="flex items-center gap-1.5">
+                            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                            <span>This email is already registered. Please login instead.</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLoginEmail(signupEmail.trim().toLowerCase());
+                              setActiveTab('login');
+                              setError('');
+                              setEmailRegisteredError(false);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-[11px] shrink-0 transition cursor-pointer shadow-sm"
+                          >
+                            Go to Login →
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <button
@@ -735,7 +770,7 @@ export default function Login({ defaultTab = 'login' }) {
                       }`}
                     >
                       <UserPlus className="w-4 h-4" />
-                      <span>{loading ? 'Sending OTP...' : 'Continue & Send Email OTP'}</span>
+                      <span>{loading ? (loadingText || 'Checking email...') : 'Continue & Send Email OTP'}</span>
                     </button>
                   </form>
                 )}

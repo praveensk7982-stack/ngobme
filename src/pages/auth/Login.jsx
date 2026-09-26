@@ -22,6 +22,7 @@ import {
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
   updateProfile
 } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
@@ -184,6 +185,14 @@ export default function Login({ defaultTab = 'login' }) {
     setLoading(true);
 
     try {
+      // Check if email is already registered in Firebase Auth before sending OTP
+      const methods = await fetchSignInMethodsForEmail(auth, cleanEmail);
+      if (methods && methods.length > 0) {
+        setError('This email is already registered. Please login instead.');
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

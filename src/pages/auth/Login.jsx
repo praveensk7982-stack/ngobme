@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Heart,
   ShieldCheck,
@@ -27,11 +28,13 @@ import {
 import { auth } from '../../lib/firebase';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 
 export default function Login({ defaultTab = 'login' }) {
+  const { t } = useTranslation();
   const { setUser, setRole } = useAuth();
   const [activeTab, setActiveTab] = useState(defaultTab); // 'login' | 'signup'
-  const [loginMode, setLoginMode] = useState('mobile'); // 'mobile' | 'email' (Mobile first)
+  const [loginMode, setLoginMode] = useState('mobile'); // 'mobile' | 'email'
 
   // Login Email States
   const [loginEmail, setLoginEmail] = useState('');
@@ -154,7 +157,7 @@ export default function Login({ defaultTab = 'login' }) {
         uid: firebaseUser.uid,
         name: firebaseUser.displayName || cleanEmail.split('@')[0],
         email: firebaseUser.email,
-        badge: 'Verified Volunteer'
+        badge: t('common.verifiedVolunteer')
       };
       localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: userProfile, role: 'user' }));
       if (setUser) setUser(userProfile);
@@ -173,7 +176,7 @@ export default function Login({ defaultTab = 'login' }) {
           email: 'dharshini@ngo-tn.org',
           phone: '9876543210',
           district: 'Chennai',
-          badge: 'Verified Volunteer Lead'
+          badge: t('common.verifiedVolunteerLead')
         };
         localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: demoUser, role: 'user' }));
         if (setUser) setUser(demoUser);
@@ -196,7 +199,7 @@ export default function Login({ defaultTab = 'login' }) {
     }
   };
 
-  // HANDLE MOBILE LOGIN (Lookup email by phone from Supabase user_profiles, then Firebase Auth)
+  // HANDLE MOBILE LOGIN
   const handleMobileLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -224,7 +227,7 @@ export default function Login({ defaultTab = 'login' }) {
           email: 'dharshini@ngo-tn.org',
           phone: '9876543210',
           district: 'Chennai',
-          badge: 'Verified Volunteer Lead'
+          badge: t('common.verifiedVolunteerLead')
         };
         localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: demoUser, role: 'user' }));
         if (setUser) setUser(demoUser);
@@ -263,7 +266,7 @@ export default function Login({ defaultTab = 'login' }) {
         name: firebaseUser.displayName || data.name || cleanPhone,
         email: firebaseUser.email,
         phone: cleanPhone,
-        badge: 'Verified Volunteer'
+        badge: t('common.verifiedVolunteer')
       };
 
       localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: userProfile, role: 'user' }));
@@ -287,7 +290,7 @@ export default function Login({ defaultTab = 'login' }) {
     }
   };
 
-  // FORGOT PASSWORD STEP 1: SEND RESET OTP
+  // FORGOT PASSWORD STEP 1
   const handleForgotStep1 = async (e) => {
     e.preventDefault();
     setError('');
@@ -329,7 +332,7 @@ export default function Login({ defaultTab = 'login' }) {
     }
   };
 
-  // FORGOT PASSWORD STEP 2: VERIFY OTP
+  // FORGOT PASSWORD STEP 2
   const handleForgotStep2 = async (e) => {
     e.preventDefault();
     setError('');
@@ -398,7 +401,7 @@ export default function Login({ defaultTab = 'login' }) {
     }
   };
 
-  // FORGOT PASSWORD STEP 3: UPDATE FIREBASE AUTH PASSWORD VIA BACKEND
+  // FORGOT PASSWORD STEP 3
   const handleForgotStep3 = async (e) => {
     e.preventDefault();
     setError('');
@@ -491,15 +494,14 @@ export default function Login({ defaultTab = 'login' }) {
     }
 
     if (isRegistered) {
-      setSignupStep(1); // Force reset to Step 1
+      setSignupStep(1);
       setEmailRegisteredError(true);
-      setError('This email is already registered. Please login instead.');
+      setError(t('auth.emailAlreadyRegistered'));
       setLoading(false);
       setLoadingText('');
-      return; // STOP HERE — do not proceed further
+      return;
     }
 
-    // 2. Only reached if email is NOT registered:
     setLoadingText('Sending OTP...');
 
     try {
@@ -600,7 +602,7 @@ export default function Login({ defaultTab = 'login' }) {
     }
   };
 
-  // SIGNUP STEP 3: SET PASSWORD, CREATE FIREBASE ACCOUNT & SAVE SUPABASE MAPPING
+  // SIGNUP STEP 3: CREATE FIREBASE ACCOUNT & SUPABASE MAPPING
   const handleSignupStep3 = async (e) => {
     e.preventDefault();
     setError('');
@@ -622,7 +624,6 @@ export default function Login({ defaultTab = 'login' }) {
       const cleanPhone = signupPhone.trim();
       const cleanName = signupName.trim() || 'Volunteer Member';
 
-      // 1. Create Firebase Auth user
       const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, signupPassword);
       const firebaseUser = userCredential.user;
 
@@ -630,7 +631,6 @@ export default function Login({ defaultTab = 'login' }) {
         displayName: cleanName
       });
 
-      // 2. Save user profile mapping in Supabase for Mobile Login lookup
       try {
         await supabase.from('user_profiles').upsert({
           uid: firebaseUser.uid,
@@ -648,7 +648,7 @@ export default function Login({ defaultTab = 'login' }) {
         name: cleanName,
         email: cleanEmail,
         phone: cleanPhone,
-        badge: 'Verified Volunteer'
+        badge: t('common.verifiedVolunteer')
       };
 
       localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: newUser, role: 'user' }));
@@ -661,7 +661,7 @@ export default function Login({ defaultTab = 'login' }) {
     } catch (err) {
       console.error('Firebase account creation error:', err);
       if (err.code === 'auth/email-already-in-use') {
-        setError('This email is already registered. Please login instead.');
+        setError(t('auth.emailAlreadyRegistered'));
       } else if (err.code === 'auth/weak-password') {
         setError('Password is too weak. Please choose a stronger password.');
       } else {
@@ -686,23 +686,27 @@ export default function Login({ defaultTab = 'login' }) {
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
-              TN NGO Connect
+              {t('common.appName')}
             </h1>
             <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">
-              Together for a Better Tomorrow
+              {t('common.tagline')}
             </span>
           </div>
         </Link>
 
-        {/* Admin Login Outlined Pill Button */}
-        <Link
-          to="/admin-login"
-          title="State Secretariat Admin Portal"
-          className="px-3.5 py-1.5 rounded-full border border-teal-600/50 bg-teal-50/40 hover:bg-teal-100/70 text-teal-800 text-xs font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95"
-        >
-          <ShieldCheck className="w-4 h-4 text-teal-600" />
-          <span>🛡 Admin Login</span>
-        </Link>
+        {/* Right Header Section: Language Switcher + Admin Login */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher />
+
+          <Link
+            to="/admin-login"
+            title="State Secretariat Admin Portal"
+            className="px-3.5 py-1.5 rounded-full border border-teal-600/50 bg-teal-50/40 hover:bg-teal-100/70 text-teal-800 text-xs font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95"
+          >
+            <ShieldCheck className="w-4 h-4 text-teal-600" />
+            <span>{t('common.adminLogin')}</span>
+          </Link>
+        </div>
       </header>
 
       {/* Main Container */}
@@ -725,10 +729,10 @@ export default function Login({ defaultTab = 'login' }) {
               <Heart className="w-7 h-7 text-white fill-current" />
             </div>
             <h2 className="text-2xl font-black tracking-tight text-white">
-              TN NGO Connect
+              {t('common.appName')}
             </h2>
             <p className="text-xs text-teal-100 font-medium mt-1">
-              Together for a Better Tomorrow
+              {t('common.tagline')}
             </p>
           </div>
 
@@ -743,7 +747,7 @@ export default function Login({ defaultTab = 'login' }) {
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
                     <Lock className="w-4 h-4 text-teal-600" />
-                    <span>Reset Your Password</span>
+                    <span>{t('auth.resetPassword')}</span>
                   </h3>
                   <button
                     type="button"
@@ -775,7 +779,7 @@ export default function Login({ defaultTab = 'login' }) {
 
                     <div>
                       <label className="text-slate-700 font-bold block mb-1.5">
-                        Registered Email Address *
+                        {t('auth.emailAddress')}
                       </label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -802,7 +806,7 @@ export default function Login({ defaultTab = 'login' }) {
                           : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 cursor-pointer'
                       }`}
                     >
-                      <span>{loading ? (loadingText || 'Sending...') : 'Send Verification Code'}</span>
+                      <span>{loading ? (loadingText || 'Sending...') : t('auth.sendVerificationCode')}</span>
                       {!loading && <ArrowRight className="w-4 h-4" />}
                     </button>
                   </form>
@@ -819,7 +823,7 @@ export default function Login({ defaultTab = 'login' }) {
 
                     <div>
                       <label className="text-slate-700 font-bold block text-center mb-2">
-                        Enter 6-Digit Verification Code
+                        {t('auth.enterOtp')}
                       </label>
                       <div className="relative">
                         <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-4" />
@@ -847,7 +851,7 @@ export default function Login({ defaultTab = 'login' }) {
                           : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 cursor-pointer'
                       }`}
                     >
-                      <span>{loading ? 'Verifying...' : 'Verify Code'}</span>
+                      <span>{loading ? 'Verifying...' : t('auth.verifyCode')}</span>
                       {!loading && <ArrowRight className="w-4 h-4" />}
                     </button>
 
@@ -891,7 +895,7 @@ export default function Login({ defaultTab = 'login' }) {
 
                     <div>
                       <label className="text-slate-700 font-bold block mb-1.5">
-                        New Password *
+                        {t('auth.newPassword')}
                       </label>
                       <div className="relative">
                         <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -919,7 +923,7 @@ export default function Login({ defaultTab = 'login' }) {
 
                     <div>
                       <label className="text-slate-700 font-bold block mb-1.5">
-                        Confirm New Password *
+                        {t('auth.confirmPassword')}
                       </label>
                       <div className="relative">
                         <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -947,7 +951,7 @@ export default function Login({ defaultTab = 'login' }) {
                           : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 cursor-pointer'
                       }`}
                     >
-                      <span>{loading ? 'Updating Password...' : 'Set New Password'}</span>
+                      <span>{loading ? 'Updating Password...' : t('auth.updatePassword')}</span>
                       {!loading && <ArrowRight className="w-4 h-4" />}
                     </button>
                   </form>
@@ -963,14 +967,14 @@ export default function Login({ defaultTab = 'login' }) {
                 <div className="bg-teal-50/90 border border-teal-200/80 rounded-2xl p-3.5 mb-5 flex items-center justify-between gap-2 shadow-sm">
                   <div className="flex items-center gap-2 text-xs font-extrabold text-teal-900">
                     <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />
-                    <span>Demo Account Ready</span>
+                    <span>{t('common.demoReady')}</span>
                   </div>
                   <button
                     type="button"
                     onClick={handleAutoFillDemo}
                     className="bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition shadow-sm active:scale-95 shrink-0"
                   >
-                    Auto-fill Demo
+                    {t('common.autoFillDemo')}
                   </button>
                 </div>
 
@@ -990,7 +994,7 @@ export default function Login({ defaultTab = 'login' }) {
                         : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    Login
+                    {t('auth.login')}
                   </button>
                   <button
                     type="button"
@@ -1006,7 +1010,7 @@ export default function Login({ defaultTab = 'login' }) {
                         : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    Create Account
+                    {t('auth.createAccount')}
                   </button>
                 </div>
 
@@ -1039,7 +1043,7 @@ export default function Login({ defaultTab = 'login' }) {
                         }`}
                       >
                         <Smartphone className="w-3.5 h-3.5" />
-                        <span>Login with Mobile</span>
+                        <span>{t('auth.loginWithMobile')}</span>
                       </button>
 
                       <button
@@ -1055,7 +1059,7 @@ export default function Login({ defaultTab = 'login' }) {
                         }`}
                       >
                         <Mail className="w-3.5 h-3.5" />
-                        <span>Login with Email</span>
+                        <span>{t('auth.loginWithEmail')}</span>
                       </button>
                     </div>
 
@@ -1064,7 +1068,7 @@ export default function Login({ defaultTab = 'login' }) {
                       <form onSubmit={handleMobileLoginSubmit} className="space-y-4 text-xs font-semibold">
                         <div>
                           <label className="text-slate-700 font-bold block mb-1.5">
-                            Registered Mobile Phone Number *
+                            {t('auth.mobileNumber')}
                           </label>
                           <div className="flex gap-2">
                             <select
@@ -1094,7 +1098,7 @@ export default function Login({ defaultTab = 'login' }) {
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
                             <label className="text-slate-700 font-bold block">
-                              Password *
+                              {t('auth.password')}
                             </label>
                             <button
                               type="button"
@@ -1105,7 +1109,7 @@ export default function Login({ defaultTab = 'login' }) {
                               }}
                               className="text-teal-600 hover:underline font-bold text-xs"
                             >
-                              Forgot Password?
+                              {t('auth.forgotPassword')}
                             </button>
                           </div>
 
@@ -1141,7 +1145,7 @@ export default function Login({ defaultTab = 'login' }) {
                               : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 cursor-pointer'
                           }`}
                         >
-                          <span>{loading ? 'Logging in...' : 'Login'}</span>
+                          <span>{loading ? 'Logging in...' : t('auth.login')}</span>
                           {!loading && <ArrowRight className="w-4 h-4" />}
                         </button>
                       </form>
@@ -1150,7 +1154,7 @@ export default function Login({ defaultTab = 'login' }) {
                       <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs font-semibold">
                         <div>
                           <label className="text-slate-700 font-bold block mb-1.5">
-                            Registered Email Address *
+                            {t('auth.emailAddress')}
                           </label>
                           <div className="relative">
                             <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -1171,7 +1175,7 @@ export default function Login({ defaultTab = 'login' }) {
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
                             <label className="text-slate-700 font-bold block">
-                              Password *
+                              {t('auth.password')}
                             </label>
                             <button
                               type="button"
@@ -1183,7 +1187,7 @@ export default function Login({ defaultTab = 'login' }) {
                               }}
                               className="text-teal-600 hover:underline font-bold text-xs"
                             >
-                              Forgot Password?
+                              {t('auth.forgotPassword')}
                             </button>
                           </div>
 
@@ -1220,7 +1224,7 @@ export default function Login({ defaultTab = 'login' }) {
                               : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 cursor-pointer'
                           }`}
                         >
-                          <span>{loading ? 'Logging in...' : 'Login'}</span>
+                          <span>{loading ? 'Logging in...' : t('auth.login')}</span>
                           {!loading && <ArrowRight className="w-4 h-4" />}
                         </button>
                       </form>
@@ -1237,7 +1241,7 @@ export default function Login({ defaultTab = 'login' }) {
                         }}
                         className="text-xs font-bold text-slate-600 hover:text-teal-700 transition"
                       >
-                        New user? <span className="text-teal-600 underline">Create Account for TN NGO Connect</span>
+                        {t('auth.newUser')} <span className="text-teal-600 underline">{t('auth.createAccountForTn')}</span>
                       </button>
                     </div>
 
@@ -1303,7 +1307,7 @@ export default function Login({ defaultTab = 'login' }) {
                       <form onSubmit={handleSignupStep1} className="space-y-3.5 text-xs font-semibold">
                         <div>
                           <label className="text-slate-700 font-bold block mb-1">
-                            Full Name *
+                            {t('auth.fullName')}
                           </label>
                           <div className="relative">
                             <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -1323,7 +1327,7 @@ export default function Login({ defaultTab = 'login' }) {
 
                         <div>
                           <label className="text-slate-700 font-bold block mb-1">
-                            Mobile Phone Number *
+                            {t('auth.mobileSignupLabel')}
                           </label>
                           <div className="flex gap-2">
                             <select
@@ -1351,7 +1355,7 @@ export default function Login({ defaultTab = 'login' }) {
 
                         <div>
                           <label className="text-slate-700 font-bold block mb-1">
-                            Email Address * (for account verification)
+                            {t('auth.emailSignupLabel')}
                           </label>
                           <div className="relative">
                             <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -1375,7 +1379,7 @@ export default function Login({ defaultTab = 'login' }) {
                             <div className="mt-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-between gap-2 animate-in fade-in">
                               <div className="flex items-center gap-1.5">
                                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                                <span>This email is already registered. Please login instead.</span>
+                                <span>{t('auth.emailAlreadyRegistered')}</span>
                               </div>
                               <button
                                 type="button"
@@ -1388,7 +1392,7 @@ export default function Login({ defaultTab = 'login' }) {
                                 }}
                                 className="px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-[11px] shrink-0 transition cursor-pointer shadow-sm"
                               >
-                                Go to Login →
+                                {t('auth.goToLogin')}
                               </button>
                             </div>
                           )}
@@ -1404,7 +1408,7 @@ export default function Login({ defaultTab = 'login' }) {
                           }`}
                         >
                           <UserPlus className="w-4 h-4" />
-                          <span>{loading ? (loadingText || 'Checking email...') : 'Continue & Send Email OTP'}</span>
+                          <span>{loading ? (loadingText || 'Checking email...') : t('auth.continueSendOtp')}</span>
                         </button>
                       </form>
                     )}
@@ -1420,7 +1424,7 @@ export default function Login({ defaultTab = 'login' }) {
 
                         <div>
                           <label className="text-slate-700 font-bold block text-center mb-2">
-                            Enter 6-Digit OTP Code
+                            {t('auth.enterOtp')}
                           </label>
                           <div className="relative">
                             <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-4" />
@@ -1448,7 +1452,7 @@ export default function Login({ defaultTab = 'login' }) {
                               : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 cursor-pointer'
                           }`}
                         >
-                          <span>{loading ? 'Verifying...' : 'Verify Email'}</span>
+                          <span>{loading ? 'Verifying...' : t('auth.verifyEmail')}</span>
                           {!loading && <ArrowRight className="w-4 h-4" />}
                         </button>
 
@@ -1492,7 +1496,7 @@ export default function Login({ defaultTab = 'login' }) {
 
                         <div>
                           <label className="text-slate-700 font-bold block mb-1.5">
-                            Set Password *
+                            {t('auth.setPassword')}
                           </label>
                           <div className="relative">
                             <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -1520,7 +1524,7 @@ export default function Login({ defaultTab = 'login' }) {
 
                         <div>
                           <label className="text-slate-700 font-bold block mb-1.5">
-                            Confirm Password *
+                            {t('auth.confirmPassword')}
                           </label>
                           <div className="relative">
                             <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -1548,7 +1552,7 @@ export default function Login({ defaultTab = 'login' }) {
                               : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 cursor-pointer'
                           }`}
                         >
-                          <span>{loading ? 'Creating Account...' : 'Create Account'}</span>
+                          <span>{loading ? 'Creating Account...' : t('auth.createAccount')}</span>
                           {!loading && <ArrowRight className="w-4 h-4" />}
                         </button>
 
@@ -1561,7 +1565,7 @@ export default function Login({ defaultTab = 'login' }) {
                             }}
                             className="text-xs font-bold text-slate-600 hover:text-teal-700 transition"
                           >
-                            Already registered? <span className="text-teal-600 underline">Login here</span>
+                            {t('auth.alreadyRegistered')} <span className="text-teal-600 underline">{t('auth.loginHere')}</span>
                           </button>
                         </div>
                       </form>

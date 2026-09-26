@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   Home, 
   Building2, 
@@ -15,16 +16,18 @@ import {
 } from 'lucide-react';
 
 export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotificationsCount = 12 }) {
+  const { t } = useTranslation();
+
   const navItems = [
-    { to: '/', label: 'Home', icon: Home, badge: null, end: true },
-    { to: '/ngo-directory', label: 'NGO Directory', icon: Building2, badge: null },
-    { to: '/camps-events', label: 'Camps & Events', icon: CalendarHeart, badge: null },
-    { to: '/volunteer', label: 'Volunteer', icon: Users, badge: null },
-    { to: '/donate', label: 'Donate', icon: HeartHandshake, badge: null },
-    { to: '/find-help', label: 'Find Help', icon: Search, badge: null },
-    { to: '/my-activity', label: 'My Activity', icon: Activity, badge: null },
-    { to: '/notifications', label: 'Notifications', icon: Bell, badge: unreadNotificationsCount },
-    { to: '/settings', label: 'Settings', icon: Settings, badge: null },
+    { to: '/', labelKey: 'nav.home', icon: Home, badge: null, end: true },
+    { to: '/ngo-directory', labelKey: 'nav.ngoDirectory', icon: Building2, badge: null },
+    { to: '/camps-events', labelKey: 'nav.campsEvents', icon: CalendarHeart, badge: null },
+    { to: '/volunteer', labelKey: 'nav.volunteer', icon: Users, badge: null },
+    { to: '/donate', labelKey: 'nav.donate', icon: HeartHandshake, badge: null },
+    { to: '/find-help', labelKey: 'nav.findHelp', icon: Search, badge: null },
+    { to: '/my-activity', labelKey: 'nav.myActivity', icon: Activity, badge: null },
+    { to: '/notifications', labelKey: 'nav.notifications', icon: Bell, badge: unreadNotificationsCount },
+    { to: '/settings', labelKey: 'nav.settings', icon: Settings, badge: null },
   ];
 
   return (
@@ -61,9 +64,9 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
               </div>
               <div>
                 <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1">
-                  TN NGO Connect
+                  {t('common.appName')}
                 </h1>
-                <p className="text-[11px] text-blue-200/80 font-medium">Together for a Better Tomorrow</p>
+                <p className="text-[11px] text-blue-200/80 font-medium">{t('common.tagline')}</p>
               </div>
             </NavLink>
 
@@ -78,7 +81,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
           </div>
         </div>
 
-        {/* Navigation Links using NavLink with active route function */}
+        {/* Navigation Links */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 custom-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -102,7 +105,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
                   <>
                     <div className="flex items-center gap-3">
                       <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-amber-300' : 'text-slate-400 group-hover:text-blue-300'}`} />
-                      <span>{item.label}</span>
+                      <span>{t(item.labelKey)}</span>
                     </div>
 
                     {item.badge ? (
@@ -137,7 +140,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
 
             <p className="text-[11px] font-bold text-amber-300 tracking-wide uppercase mb-0.5">Tamil Nadu Pride</p>
             <p className="text-[11px] font-semibold text-slate-200 leading-snug">
-              Stronger Communities, Healthier Tamil Nadu
+              {t('nav.prideTagline')}
             </p>
             
             <div className="mt-2.5 pt-2 border-t border-slate-700/60 w-full flex items-center justify-center gap-1 text-[10px] text-blue-200/90 font-medium">

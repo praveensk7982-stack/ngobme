@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
-import { Settings as SettingsIcon, User, Bell, Shield, Save, CheckCircle2, SlidersHorizontal } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Settings as SettingsIcon, User, Bell, Save, CheckCircle2, SlidersHorizontal, Globe } from 'lucide-react';
 import { ALL_TN_DISTRICTS } from '../data/mockData';
+import { supabase } from '../lib/supabaseClient';
 
 export default function Settings() {
+  const { t, i18n } = useTranslation();
   const [saved, setSaved] = useState(false);
   const [profile, setProfile] = useState({
     name: 'Dharshini Raj',
@@ -19,12 +22,46 @@ export default function Settings() {
     volunteerMatches: true
   });
 
+  const [defaultSiteLanguage, setDefaultSiteLanguage] = useState('en');
+
+  // Load default site language setting from Supabase
+  useEffect(() => {
+    async function loadSiteSettings() {
+      try {
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'default_language')
+          .maybeSingle();
+
+        if (!error && data && data.value) {
+          setDefaultSiteLanguage(data.value);
+        }
+      } catch (err) {
+        console.error('Failed to load default language from Supabase:', err);
+      }
+    }
+    loadSiteSettings();
+  }, []);
+
   const handleToggle = (key) => {
     setToggles({ ...toggles, [key]: !toggles[key] });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Save default site language to Supabase
+    try {
+      await supabase.from('site_settings').upsert({
+        key: 'default_language',
+        value: defaultSiteLanguage,
+        updated_at: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('Error updating site_settings in Supabase:', err);
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 4000);
   };
@@ -37,14 +74,14 @@ export default function Settings() {
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold mb-3 border border-blue-200">
             <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" />
-            <span>Account Preferences & Preferences Control</span>
+            <span>Account Preferences & System Controls</span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Account Settings
+            {t('nav.settings')}
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Manage your volunteer profile, contact details, district headquarters, and notification alerts.
+            Manage your volunteer profile, contact details, district headquarters, default site language, and notification alerts.
           </p>
         </div>
       </div>
@@ -62,6 +99,39 @@ export default function Settings() {
       {/* Main Settings Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         
+        {/* Default Site Language Control Card (Admin / System Settings) */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-4">
+          <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Globe className="w-5 h-5 text-teal-600" />
+            Default Site Language (Admin Control)
+          </h2>
+
+          <p className="text-xs text-slate-600 font-medium leading-relaxed">
+            Choose the default language presented to new, first-time visitors before browser auto-detection. Individual users can still select their preferred language anytime via the header language switcher.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-2">
+            <div className="w-full sm:w-64">
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Default First-Time Visitor Language:
+              </label>
+              <select
+                value={defaultSiteLanguage}
+                onChange={(e) => setDefaultSiteLanguage(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-teal-600 focus:outline-none bg-slate-50 font-bold text-xs text-slate-800 cursor-pointer"
+              >
+                <option value="en">English (Default)</option>
+                <option value="ta">தமிழ் (Tamil)</option>
+                <option value="hi">हिंदी (Hindi)</option>
+              </select>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-teal-50 border border-teal-200 text-teal-900 text-xs font-semibold">
+              <span>Saved in Supabase <code className="bg-teal-100 px-1 py-0.5 rounded font-mono">site_settings</code> table.</span>
+            </div>
+          </div>
+        </div>
+
         {/* Profile Information Card */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-4">
           <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
@@ -127,60 +197,6 @@ export default function Settings() {
                 {ALL_TN_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
-          </div>
-        </div>
-
-        {/* Notification Toggles Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-4">
-          <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Bell className="w-5 h-5 text-blue-600" />
-            Notification & Alert Preferences
-          </h2>
-
-          <div className="space-y-3 divide-y divide-slate-100">
-            
-            <div className="pt-2 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold text-slate-800">Email Camp Announcements</p>
-                <p className="text-[11px] text-slate-500 font-medium">Receive weekly updates on upcoming medical and blood drives</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleToggle('emailAlerts')}
-                className={`w-12 h-6 rounded-full transition-colors p-1 flex items-center ${toggles.emailAlerts ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'}`}
-              >
-                <span className="w-4 h-4 rounded-full bg-white shadow-md" />
-              </button>
-            </div>
-
-            <div className="pt-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold text-slate-800">SMS Blood Emergency Alerts</p>
-                <p className="text-[11px] text-slate-500 font-medium">Instant SMS for urgent blood requirements in your district</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleToggle('smsBloodAlerts')}
-                className={`w-12 h-6 rounded-full transition-colors p-1 flex items-center ${toggles.smsBloodAlerts ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'}`}
-              >
-                <span className="w-4 h-4 rounded-full bg-white shadow-md" />
-              </button>
-            </div>
-
-            <div className="pt-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold text-slate-800">Volunteer Opportunity Matches</p>
-                <p className="text-[11px] text-slate-500 font-medium">Auto-notify when a non-profit posts a volunteer role matching your skills</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleToggle('volunteerMatches')}
-                className={`w-12 h-6 rounded-full transition-colors p-1 flex items-center ${toggles.volunteerMatches ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'}`}
-              >
-                <span className="w-4 h-4 rounded-full bg-white shadow-md" />
-              </button>
-            </div>
-
           </div>
         </div>
 

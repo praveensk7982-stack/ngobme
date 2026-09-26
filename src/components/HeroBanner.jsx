@@ -1,9 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { MapPin, Search, Mic, MicOff, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
 import { ALL_TN_DISTRICTS } from '../data/mockData';
 
 export default function HeroBanner({ selectedDistrict: propDistrict, setSelectedDistrict: propSetDistrict }) {
+  const { t } = useTranslation();
   const [district, setDistrict] = useState(propDistrict || 'All Districts');
   const [searchText, setSearchText] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -15,7 +17,6 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
   const handleDistrictSearchSubmit = (e) => {
     if (e) e.preventDefault();
     
-    // Also update parent state if provided
     if (propSetDistrict) {
       propSetDistrict(district);
     }
@@ -120,27 +121,20 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
 
           <div className="hidden sm:block text-right">
             <span className="font-handwriting text-amber-300 text-lg sm:text-xl font-bold tracking-wide transform -rotate-1 inline-block drop-shadow">
-              Many NGOs. One Platform. Greater Impact
+              {t('common.tagline')}
             </span>
           </div>
         </div>
 
         {/* Main Heading */}
         <h1 className="text-2xl sm:text-4xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight mb-3">
-          Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400">Tamil Nadu NGO Connect</span>
+          {t('home.heroTitle')}
         </h1>
 
         {/* Subtext */}
         <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal mb-6 max-w-2xl">
-          Discover verified non-profit organizations, participate in active blood & medical camps, volunteer in your local community, and support life-changing social causes across all 38 districts of Tamil Nadu.
+          {t('home.heroSubtitle')}
         </p>
-
-        {/* Mobile Handwritten Caption fallback */}
-        <div className="sm:hidden mb-5">
-          <span className="font-handwriting text-amber-300 text-base font-bold tracking-wide transform -rotate-1 inline-block">
-            Many NGOs. One Platform. Greater Impact
-          </span>
-        </div>
 
         {/* Search by District Bar Form */}
         <form 
@@ -205,7 +199,7 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
             className="w-full sm:w-auto px-6 py-2.5 rounded-xl sm:rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-600/30 transition flex items-center justify-center gap-2 shrink-0 active:scale-95"
           >
             <Search className="w-4 h-4" />
-            <span>Search District</span>
+            <span>{t('home.searchNgo')}</span>
           </button>
         </form>
 

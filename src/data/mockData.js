@@ -310,10 +310,14 @@ export const UPCOMING_EVENTS = [
     tagBadge: 'bg-red-500 text-white',
     title: 'Free Eye Checkup & Cataract Screening Camp',
     org: 'Aram Seiya Virumbhu Foundation',
+    camp_type: 'government',
     date: 'Tomorrow, Sep 24 • 9:00 AM',
+    time: '9:00 AM - 2:00 PM',
     location: 'T. Nagar Community Hall, Chennai',
     district: 'Chennai',
-    spots: '120 spots left'
+    spots: '120 spots left',
+    spots_available: 120,
+    description: 'State government supported comprehensive eye examination, free prescription glasses distribution, and cataract surgery registration.'
   },
   {
     id: 'evt-2',
@@ -322,10 +326,14 @@ export const UPCOMING_EVENTS = [
     tagBadge: 'bg-pink-500 text-white',
     title: 'Mega Blood & Plasma Donation Drive 2026',
     org: 'Uyir Thuli Blood Network',
+    camp_type: 'private',
     date: 'Sep 26 • 10:00 AM - 4:00 PM',
+    time: '10:00 AM - 4:00 PM',
     location: 'VOC Park Grounds, Coimbatore',
     district: 'Coimbatore',
-    spots: 'High Demand'
+    spots: '45 spots left',
+    spots_available: 45,
+    description: 'Urgent voluntary blood donation drive organized in partnership with local hospital blood banks. Refreshments & certificate provided.'
   },
   {
     id: 'evt-3',
@@ -334,10 +342,14 @@ export const UPCOMING_EVENTS = [
     tagBadge: 'bg-purple-500 text-white',
     title: 'Geriatric Health & Mental Wellness Seminar',
     org: 'Agaram Care Trust',
+    camp_type: 'government',
     date: 'Sep 28 • 9:30 AM',
+    time: '9:30 AM - 1:00 PM',
     location: 'Srirangam Mandapam, Trichy',
     district: 'Tiruchirappalli',
-    spots: 'Registration open'
+    spots: '80 spots left',
+    spots_available: 80,
+    description: 'Specialized health checkup and wellness counselling drive for senior citizens above 60 years under District Social Welfare Board.'
   },
   {
     id: 'evt-4',
@@ -346,10 +358,14 @@ export const UPCOMING_EVENTS = [
     tagBadge: 'bg-emerald-500 text-white',
     title: '5,000 Seedball Plantation & Clean Drive',
     org: 'Pasumai Tamilagam',
+    camp_type: 'private',
     date: 'Oct 01 • 7:00 AM',
+    time: '7:00 AM - 11:00 AM',
     location: 'Mattuthavani Lake Bank, Madurai',
     district: 'Madurai',
-    spots: 'Volunteers Needed'
+    spots: '150 spots left',
+    spots_available: 150,
+    description: 'Community afforestation drive to plant 5,000 native seed balls along Mattuthavani lake bund.'
   },
   {
     id: 'evt-5',
@@ -358,10 +374,14 @@ export const UPCOMING_EVENTS = [
     tagBadge: 'bg-red-500 text-white',
     title: 'Paediatric Cardiac Screening & Free Surgery Camp',
     org: 'Vallalar Emergency Network',
+    camp_type: 'government',
     date: 'Oct 05 • 8:30 AM',
+    time: '8:30 AM - 3:00 PM',
     location: 'GH Campus, Vellore',
     district: 'Vellore',
-    spots: '60 spots available'
+    spots: '60 spots left',
+    spots_available: 60,
+    description: 'State government sponsored free congenital heart disease screening drive for infants and children under 15.'
   },
   {
     id: 'evt-6',
@@ -370,10 +390,14 @@ export const UPCOMING_EVENTS = [
     tagBadge: 'bg-emerald-500 text-white',
     title: 'Kaveri River Delta Cleanup & Plastic Collection',
     org: 'Kaveri Basin Eco Trust',
+    camp_type: 'private',
     date: 'Oct 08 • 6:30 AM',
+    time: '6:30 AM - 10:30 AM',
     location: 'Kallanai Dam Banks, Thanjavur',
     district: 'Thanjavur',
-    spots: '200 Volunteers registered'
+    spots: '200 spots left',
+    spots_available: 200,
+    description: 'Mass public cleanup drive along Kaveri river banks to eliminate single-use plastics before monsoon season.'
   }
 ];
 
@@ -396,7 +420,8 @@ export const VOLUNTEER_OPPORTUNITIES = [
     commitment: 'Remote / Flexible',
     category: 'Blood Donation',
     badge: 'High Impact',
-    badgeColor: 'bg-red-100 text-red-700 border-red-200'
+    badgeColor: 'bg-red-100 text-red-700 border-red-200',
+    neededBloodGroups: ['O+', 'O-', 'AB-']
   },
   {
     id: 'vol-3',

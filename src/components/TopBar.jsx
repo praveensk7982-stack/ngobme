@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   Search, 
   Mic, 
@@ -17,13 +18,11 @@ import {
   Tag,
   X,
   AlertCircle,
-  LogIn,
-  ShieldCheck,
-  ShieldAlert,
-  UserPlus
+  ShieldCheck
 } from 'lucide-react';
 import { INITIAL_NOTIFICATIONS, getCombinedSearchData } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function TopBar({ 
   searchQuery, 
@@ -33,6 +32,7 @@ export default function TopBar({
   onOpenDonateModal,
   onClearNotifications
 }) {
+  const { t } = useTranslation();
   const { user: authUser, logout } = useAuth();
   
   const user = authUser || {
@@ -170,13 +170,7 @@ export default function TopBar({
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    setShowUserMenu(false);
-    navigate('/');
-  };
-
-  // Live filter combined search data on keystroke or voice input
+  // Live filter combined search data
   const allSearchData = getCombinedSearchData();
   const trimmedQuery = searchQuery.trim().toLowerCase();
 
@@ -222,7 +216,7 @@ export default function TopBar({
               onFocus={handleFocus}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
-              placeholder="Search NGOs, camps, services, or keywords..."
+              placeholder={t('common.searchPlaceholder')}
               className="w-full pl-10 pr-16 py-2.5 bg-slate-100/80 hover:bg-slate-100 focus:bg-white border border-transparent focus:border-blue-500 rounded-2xl text-xs sm:text-sm placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all duration-200"
             />
 
@@ -241,7 +235,7 @@ export default function TopBar({
               <button
                 onClick={toggleMic}
                 aria-label="Voice search"
-                title={isListening ? "Listening... Speak search query" : "Voice search"}
+                title={isListening ? "Listening..." : "Voice search"}
                 className={`p-1 rounded-full transition-all ${
                   isListening 
                     ? 'text-rose-500 animate-pulse ring-2 ring-rose-400/40 bg-rose-50' 
@@ -261,7 +255,6 @@ export default function TopBar({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    
                     {/* Section 1: NGOs */}
                     {ngoMatches.length > 0 && (
                       <div>
@@ -351,19 +344,11 @@ export default function TopBar({
                         </div>
                       </div>
                     )}
-
-                    <div className="px-4 pt-2 pb-1 border-t border-slate-100 text-center">
-                      <span className="text-[10px] font-semibold text-slate-400">
-                        Press <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border text-slate-700 font-mono font-bold text-[9px]">Enter ↵</kbd> for full search results
-                      </span>
-                    </div>
-
                   </div>
                 )}
               </div>
             )}
 
-            {/* Speech Toast Alert */}
             {speechError && (
               <div className="absolute left-0 right-0 top-full mt-2 bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-lg z-50 flex items-center gap-2 animate-in fade-in">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -373,30 +358,33 @@ export default function TopBar({
           </div>
         </div>
 
-        {/* Right Section: Donate Button, Notification Bell, User/Admin Profile */}
-        <div className="flex items-center gap-2.5 sm:gap-4">
+        {/* Right Section: Language Switcher, Donate Button, Notification Bell, User Profile */}
+        <div className="flex items-center gap-2 sm:gap-3">
           
+          {/* Global Language Switcher */}
+          <LanguageSwitcher />
+
           <button
             onClick={onOpenDonateModal}
-            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200 transition shadow-sm active:scale-95"
+            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200 transition shadow-sm active:scale-95 shrink-0"
           >
             <Heart className="w-3.5 h-3.5 fill-current text-rose-500" />
-            <span>Donate Now</span>
+            <span>{t('common.donateNow')}</span>
           </button>
 
           {/* Notification Bell Dropdown */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => {
                 setShowNotifications(!showNotifications);
                 setShowUserMenu(false);
               }}
-              className="relative p-2.5 rounded-xl text-slate-600 hover:text-blue-700 hover:bg-slate-100 transition"
+              className="relative p-2 rounded-xl text-slate-600 hover:text-blue-700 hover:bg-slate-100 transition"
               aria-label="View notifications"
             >
               <Bell className="w-5 h-5" />
               {unreadNotificationsCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white animate-pulse">
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white animate-pulse">
                   {unreadNotificationsCount}
                 </span>
               )}
@@ -407,7 +395,7 @@ export default function TopBar({
               <div className="absolute right-0 mt-2 w-80 sm:w-90 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="flex items-center justify-between px-4 pb-2 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-bold text-slate-800">Notifications</h3>
+                    <h3 className="text-xs font-bold text-slate-800">{t('common.notifications')}</h3>
                     <span className="px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold">
                       {unreadNotificationsCount} New
                     </span>
@@ -440,36 +428,26 @@ export default function TopBar({
                     </div>
                   ))}
                 </div>
-
-                <div className="px-4 pt-2.5 border-t border-slate-100 text-center">
-                  <Link 
-                    to="/notifications" 
-                    onClick={() => setShowNotifications(false)}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-800 transition"
-                  >
-                    View All Notifications →
-                  </Link>
-                </div>
               </div>
             )}
           </div>
 
-          <div className="h-6 w-px bg-slate-200" />
+          <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 
           {/* USER PROFILE DISPLAY */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => {
                 setShowUserMenu(!showUserMenu);
                 setShowNotifications(false);
               }}
-              className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition group"
+              className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 transition group"
             >
               <div className="relative">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-white">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-md ring-2 ring-white">
                   {user.name[0]}
                 </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-white" />
               </div>
 
               <div className="hidden sm:block text-left">
@@ -490,7 +468,7 @@ export default function TopBar({
                   <p className="text-xs font-bold text-slate-800">{user.name}</p>
                   <p className="text-[11px] text-slate-500">{user.email}</p>
                   <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
-                    Verified Volunteer Lead
+                    {t('common.verifiedVolunteerLead')}
                   </span>
                 </div>
 
@@ -500,21 +478,21 @@ export default function TopBar({
                     onClick={() => setShowUserMenu(false)}
                     className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
                   >
-                    <User className="w-4 h-4 text-slate-400" /> My Profile & Activity
+                    <User className="w-4 h-4 text-slate-400" /> {t('nav.myActivity')}
                   </Link>
                   <Link 
                     to="/settings" 
                     onClick={() => setShowUserMenu(false)}
                     className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
                   >
-                    <SlidersHorizontal className="w-4 h-4 text-slate-400" /> Account Settings
+                    <SlidersHorizontal className="w-4 h-4 text-slate-400" /> {t('nav.settings')}
                   </Link>
                   <Link 
                     to="/admin" 
                     onClick={() => setShowUserMenu(false)}
                     className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
                   >
-                    <ShieldCheck className="w-4 h-4 text-amber-500" /> Admin Console
+                    <ShieldCheck className="w-4 h-4 text-amber-500" /> {t('nav.adminConsole')}
                   </Link>
                 </div>
 
@@ -527,7 +505,7 @@ export default function TopBar({
                     }}
                     className="w-full px-4 py-2 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 text-xs font-semibold cursor-pointer"
                   >
-                    <LogOut className="w-4 h-4 text-rose-500" /> Sign Out
+                    <LogOut className="w-4 h-4 text-rose-500" /> {t('common.signOut')}
                   </button>
                 </div>
               </div>

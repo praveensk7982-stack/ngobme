@@ -35,7 +35,7 @@ export default function TopBar({
   onClearNotifications
 }) {
   const { t } = useTranslation();
-  const { user: authUser, role } = useAuth();
+  const { user: authUser, role, logout } = useAuth();
   
   const user = authUser || {
     name: 'Dharshini Raj',
@@ -452,9 +452,16 @@ export default function TopBar({
                 <div className="pt-1 border-t border-slate-100">
                   <button 
                     onClick={async () => {
-                      setShowUserMenu(false);
-                      await logout();
-                      navigate('/login');
+                      try {
+                        setShowUserMenu(false);
+                        if (logout) {
+                          await logout();
+                        }
+                      } catch (err) {
+                        console.error('Sign out error:', err);
+                      } finally {
+                        navigate('/login');
+                      }
                     }}
                     className="w-full px-4 py-2 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 text-xs font-semibold cursor-pointer"
                   >

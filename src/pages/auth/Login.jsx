@@ -15,7 +15,6 @@ import {
   ArrowLeft,
   AlertCircle,
   CheckCircle2,
-  Sparkles,
   RefreshCw,
   KeyRound
 } from 'lucide-react';
@@ -110,24 +109,6 @@ export default function Login({ defaultTab = 'login' }) {
     }
     return () => clearInterval(timer);
   }, [isForgotPasswordMode, forgotStep, forgotResendTimer]);
-
-  // AUTO-FILL DEMO CREDENTIALS
-  const handleAutoFillDemo = () => {
-    setIsForgotPasswordMode(false);
-    if (activeTab !== 'login') {
-      setActiveTab('login');
-    }
-    if (loginMode === 'mobile') {
-      setLoginPhone('9876543210');
-      setLoginMobilePassword('demo123456');
-    } else {
-      setLoginEmail('dharshini@ngo-tn.org');
-      setLoginPassword('demo123456');
-    }
-    setError('');
-    setToastMessage('Demo credentials auto-filled!');
-    setTimeout(() => setToastMessage(''), 4000);
-  };
 
   // HANDLE EMAIL LOGIN (Firebase Auth)
   const handleLoginSubmit = async (e) => {
@@ -998,21 +979,6 @@ export default function Login({ defaultTab = 'login' }) {
               /* VIEW B: MAIN LOGIN & SIGNUP TABS */
               /* ========================================= */
               <>
-                {/* Highlighted Info Banner */}
-                <div className="bg-teal-50/90 border border-teal-200/80 rounded-2xl p-3.5 mb-5 flex items-center justify-between gap-2 shadow-sm">
-                  <div className="flex items-center gap-2 text-xs font-extrabold text-teal-900">
-                    <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />
-                    <span>{t('common.demoReady')}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAutoFillDemo}
-                    className="bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition shadow-sm active:scale-95 shrink-0"
-                  >
-                    {t('common.autoFillDemo')}
-                  </button>
-                </div>
-
                 {/* Two-Tab Toggle */}
                 <div className="bg-slate-100 p-1.5 rounded-2xl flex items-center mb-6 border border-slate-200/60">
                   <button

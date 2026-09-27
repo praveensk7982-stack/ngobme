@@ -50,7 +50,14 @@ export function useVoiceSearch(onTranscriptReceived) {
         }
 
         if (isListening) {
-          await SpeechRecognitionPlugin.stop();
+          try {
+            await SpeechRecognitionPlugin.stop();
+            if (typeof SpeechRecognitionPlugin.removeAllListeners === 'function') {
+              await SpeechRecognitionPlugin.removeAllListeners();
+            }
+          } catch (stopErr) {
+            console.warn('Native speech stop warning:', stopErr);
+          }
           setIsListening(false);
           return;
         }
@@ -90,6 +97,15 @@ export function useVoiceSearch(onTranscriptReceived) {
         setIsListening(true);
 
         if (typeof SpeechRecognitionPlugin.addListener === 'function') {
+          // Sync UI state with native listening state transitions
+          await SpeechRecognitionPlugin.addListener('listeningState', (data) => {
+            if (data.status === 'stopped' || data.status === 'ended') {
+              setIsListening(false);
+            } else if (data.status === 'started' || data.status === 'listening') {
+              setIsListening(true);
+            }
+          });
+
           await SpeechRecognitionPlugin.addListener('partialResults', (data) => {
             if (data.matches && data.matches.length > 0 && onTranscriptReceived) {
               onTranscriptReceived(data.matches[0]);

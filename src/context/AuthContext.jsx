@@ -22,6 +22,10 @@ export function AuthProvider({ children }) {
         let profilePhone = parsed?.user?.phone || '';
         let profileDistrict = parsed?.user?.district || 'Chennai';
 
+        const emailPrefix = firebaseUser.email 
+          ? firebaseUser.email.split('@')[0].charAt(0).toUpperCase() + firebaseUser.email.split('@')[0].slice(1)
+          : 'User';
+
         try {
           const { data: profile } = await supabase
             .from('user_profiles')
@@ -30,22 +34,38 @@ export function AuthProvider({ children }) {
             .maybeSingle();
 
           if (profile) {
-            if (profile.name) profileName = profile.name;
+            if (profile.name && profile.name !== 'Volunteer Member') {
+              profileName = profile.name;
+            }
             if (profile.role === 'admin') profileRole = 'admin';
             if (profile.phone) profilePhone = profile.phone;
             if (profile.district) profileDistrict = profile.district;
+          } else {
+            // Auto-create missing user_profiles row in Supabase
+            const fallbackName = (firebaseUser.displayName && firebaseUser.displayName !== 'Volunteer Member') 
+              ? firebaseUser.displayName 
+              : emailPrefix;
+
+            await supabase.from('user_profiles').upsert({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: fallbackName,
+              phone: profilePhone,
+              district: profileDistrict,
+              created_at: new Date().toISOString()
+            }, { onConflict: 'email' });
+            
+            profileName = fallbackName;
           }
         } catch (err) {
-          console.warn('AuthContext Supabase profile lookup fallback:', err);
+          console.warn('AuthContext Supabase profile lookup error:', err);
         }
 
-        // Clean up fallback if name is empty or looks like username email split
-        if (!profileName || profileName === firebaseUser.email?.split('@')[0]) {
-          if (parsed?.user?.name && parsed.user.name !== firebaseUser.email?.split('@')[0]) {
-            profileName = parsed.user.name;
-          } else if (firebaseUser.displayName) {
-            profileName = firebaseUser.displayName;
-          }
+        // Final name fallback without generic 'Volunteer Member'
+        if (!profileName || profileName === 'Volunteer Member') {
+          profileName = (firebaseUser.displayName && firebaseUser.displayName !== 'Volunteer Member')
+            ? firebaseUser.displayName
+            : emailPrefix;
         }
 
         const badgeText = profileRole === 'admin'
@@ -55,7 +75,7 @@ export function AuthProvider({ children }) {
         const userObj = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
-          name: profileName || 'Volunteer Member',
+          name: profileName,
           phone: profilePhone,
           district: profileDistrict,
           badge: badgeText

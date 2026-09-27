@@ -656,7 +656,8 @@ export default function Login({ defaultTab = 'login' }) {
     try {
       const cleanEmail = signupEmail.trim().toLowerCase();
       const cleanPhone = signupPhone.trim();
-      const cleanName = signupName.trim() || 'Volunteer Member';
+      const emailPrefix = cleanEmail.split('@')[0].charAt(0).toUpperCase() + cleanEmail.split('@')[0].slice(1);
+      const cleanName = signupName.trim() || emailPrefix;
 
       const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, signupPassword);
       const firebaseUser = userCredential.user;

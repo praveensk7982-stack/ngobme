@@ -153,18 +153,35 @@ export default function Login({ defaultTab = 'login' }) {
       const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
       const firebaseUser = userCredential.user;
 
+      // Check profile role in user_profiles
+      let userRole = 'user';
+      try {
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('email', cleanEmail)
+          .maybeSingle();
+        if (profileData && profileData.role === 'admin') {
+          userRole = 'admin';
+        } else if (cleanEmail.includes('admin')) {
+          userRole = 'admin';
+        }
+      } catch (err) {
+        console.warn('Role lookup fallback:', err);
+      }
+
       const userProfile = {
         uid: firebaseUser.uid,
         name: firebaseUser.displayName || cleanEmail.split('@')[0],
         email: firebaseUser.email,
-        badge: t('common.verifiedVolunteer')
+        badge: userRole === 'admin' ? 'State Secretariat Admin' : t('common.verifiedVolunteer')
       };
-      localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: userProfile, role: 'user' }));
+      localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: userProfile, role: userRole }));
       if (setUser) setUser(userProfile);
-      if (setRole) setRole('user');
+      if (setRole) setRole(userRole);
 
-      setToastMessage('Login successful! Redirecting...');
-      setTimeout(() => navigate('/'), 600);
+      setToastMessage(userRole === 'admin' ? 'Admin Control Center access granted! Redirecting...' : 'Login successful! Redirecting...');
+      setTimeout(() => navigate(userRole === 'admin' ? '/admin' : '/'), 600);
 
     } catch (err) {
       console.error('Firebase login error:', err);
@@ -238,10 +255,10 @@ export default function Login({ defaultTab = 'login' }) {
         return;
       }
 
-      // 2. Query Supabase for email associated with phone
+      // 2. Query Supabase for email & role associated with phone
       const { data, error: dbError } = await supabase
         .from('user_profiles')
-        .select('email, name')
+        .select('email, name, role')
         .eq('phone', cleanPhone)
         .maybeSingle();
 
@@ -256,6 +273,7 @@ export default function Login({ defaultTab = 'login' }) {
       }
 
       const targetEmail = data.email;
+      const userRole = data.role === 'admin' || targetEmail.includes('admin') ? 'admin' : 'user';
 
       // 3. Authenticate with Firebase Auth using targetEmail
       const userCredential = await signInWithEmailAndPassword(auth, targetEmail, cleanPassword);
@@ -266,15 +284,15 @@ export default function Login({ defaultTab = 'login' }) {
         name: firebaseUser.displayName || data.name || cleanPhone,
         email: firebaseUser.email,
         phone: cleanPhone,
-        badge: t('common.verifiedVolunteer')
+        badge: userRole === 'admin' ? 'State Secretariat Admin' : t('common.verifiedVolunteer')
       };
 
-      localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: userProfile, role: 'user' }));
+      localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: userProfile, role: userRole }));
       if (setUser) setUser(userProfile);
-      if (setRole) setRole('user');
+      if (setRole) setRole(userRole);
 
-      setToastMessage('Login successful! Redirecting...');
-      setTimeout(() => navigate('/'), 600);
+      setToastMessage(userRole === 'admin' ? 'Admin Control Center access granted! Redirecting...' : 'Login successful! Redirecting...');
+      setTimeout(() => navigate(userRole === 'admin' ? '/admin' : '/'), 600);
 
     } catch (err) {
       console.error('Mobile login authentication error:', err);

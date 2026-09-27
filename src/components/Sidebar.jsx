@@ -13,7 +13,8 @@ import {
   Settings,
   X,
   ShieldCheck,
-  Siren
+  Siren,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,7 +22,15 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
   const { t } = useTranslation();
   const { user, role } = useAuth();
 
-  const navItems = [
+  const navItems = user && role === 'admin' ? [
+    { to: '/admin', label: 'Admin Dashboard', icon: ShieldCheck, badge: 'CONTROL', end: true },
+    { to: '/admin?tab=camps', label: 'Camps & Events Control', icon: CalendarHeart, badge: null },
+    { to: '/admin?tab=emergency_alerts', label: 'State Emergency Alerts', icon: Siren, badge: 'LIVE' },
+    { to: '/admin?tab=community_reports', label: 'Community Reports', icon: AlertTriangle, badge: null },
+    { to: '/admin?tab=ngos', label: 'NGO Approvals Queue', icon: Building2, badge: null },
+    { to: '/settings', label: 'System Settings', icon: Settings, badge: null },
+    { to: '/', label: 'View Public Portal', icon: Home, badge: 'PREVIEW' }
+  ] : [
     { to: '/', labelKey: 'nav.home', icon: Home, badge: null, end: true },
     { to: '/ngo-directory', labelKey: 'nav.ngoDirectory', icon: Building2, badge: null },
     { to: '/camps-events', labelKey: 'nav.campsEvents', icon: CalendarHeart, badge: null },
@@ -33,10 +42,6 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
     { to: '/notifications', labelKey: 'nav.notifications', icon: Bell, badge: unreadNotificationsCount },
     { to: '/settings', labelKey: 'nav.settings', icon: Settings, badge: null },
   ];
-
-  if (user && role === 'admin') {
-    navItems.push({ to: '/admin', labelKey: 'nav.adminConsole', icon: ShieldCheck, badge: 'ADMIN' });
-  }
 
   return (
     <>
@@ -113,7 +118,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
                   <>
                     <div className="flex items-center gap-3">
                       <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-amber-300' : 'text-slate-400 group-hover:text-blue-300'}`} />
-                      <span>{t(item.labelKey)}</span>
+                      <span>{item.label || t(item.labelKey)}</span>
                     </div>
 
                     {item.badge ? (

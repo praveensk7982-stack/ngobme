@@ -22,10 +22,14 @@ import {
   UserCheck
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
+import { useSearchParams } from 'react-router-dom';
 import { FEATURED_NGOS, UPCOMING_EVENTS, ALL_TN_DISTRICTS } from '../../data/mockData';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('camps'); // 'camps' | 'emergency_alerts' | 'community_reports' | 'ngos'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const activeTab = tabParam || 'camps';
+  const setActiveTab = (newTab) => setSearchParams({ tab: newTab });
 
   // Camps Management State
   const [campsList, setCampsList] = useState(UPCOMING_EVENTS);

@@ -358,19 +358,29 @@ export default function TopBar({
           </div>
         </div>
 
-        {/* Right Section: Language Switcher, Donate Button, Notification Bell, User Profile */}
+        {/* Right Section: Language Switcher, Admin Badge/Donate Button, Notification Bell, User Profile */}
         <div className="flex items-center gap-2 sm:gap-3">
           
           {/* Global Language Switcher */}
           <LanguageSwitcher />
 
-          <button
-            onClick={onOpenDonateModal}
-            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200 transition shadow-sm active:scale-95 shrink-0"
-          >
-            <Heart className="w-3.5 h-3.5 fill-current text-rose-500" />
-            <span>{t('common.donateNow')}</span>
-          </button>
+          {user && role === 'admin' ? (
+            <Link
+              to="/admin"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition shadow-sm active:scale-95 shrink-0"
+            >
+              <ShieldCheck className="w-4 h-4 text-slate-950" />
+              <span className="hidden md:inline">Admin Console</span>
+            </Link>
+          ) : (
+            <button
+              onClick={onOpenDonateModal}
+              className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200 transition shadow-sm active:scale-95 shrink-0"
+            >
+              <Heart className="w-3.5 h-3.5 fill-current text-rose-500" />
+              <span>{t('common.donateNow')}</span>
+            </button>
+          )}
 
           {/* Notification Bell Dropdown */}
           <div className="relative shrink-0">

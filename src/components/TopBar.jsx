@@ -33,7 +33,7 @@ export default function TopBar({
   onClearNotifications
 }) {
   const { t } = useTranslation();
-  const { user: authUser, logout } = useAuth();
+  const { user: authUser, role, logout } = useAuth();
   
   const user = authUser || {
     name: 'Dharshini Raj',
@@ -487,13 +487,15 @@ export default function TopBar({
                   >
                     <SlidersHorizontal className="w-4 h-4 text-slate-400" /> {t('nav.settings')}
                   </Link>
-                  <Link 
-                    to="/admin" 
-                    onClick={() => setShowUserMenu(false)}
-                    className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-amber-500" /> {t('nav.adminConsole')}
-                  </Link>
+                  {user && role === 'admin' && (
+                    <Link 
+                      to="/admin" 
+                      onClick={() => setShowUserMenu(false)}
+                      className="w-full px-4 py-2 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 font-medium"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-amber-500" /> {t('nav.adminConsole')}
+                    </Link>
+                  )}
                 </div>
 
                 <div className="pt-1 border-t border-slate-100">

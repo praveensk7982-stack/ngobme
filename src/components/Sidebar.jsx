@@ -19,7 +19,7 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotificationsCount = 12 }) {
   const { t } = useTranslation();
-  const { role } = useAuth();
+  const { user, role } = useAuth();
 
   const navItems = [
     { to: '/', labelKey: 'nav.home', icon: Home, badge: null, end: true },
@@ -34,7 +34,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
     { to: '/settings', labelKey: 'nav.settings', icon: Settings, badge: null },
   ];
 
-  if (role === 'admin') {
+  if (user && role === 'admin') {
     navItems.push({ to: '/admin', labelKey: 'nav.adminConsole', icon: ShieldCheck, badge: 'ADMIN' });
   }
 

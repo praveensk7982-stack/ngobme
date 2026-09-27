@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 
 /**
  * Reusable Voice Search Hook using Web Speech API & Capacitor Native Plugin Support
@@ -33,40 +34,51 @@ export function useVoiceSearch(onTranscriptReceived) {
   const toggleVoiceSearch = async () => {
     setSpeechError('');
 
-    // Check if running inside Capacitor with native SpeechRecognition plugin
-    if (window.Capacitor?.isPluginAvailable('SpeechRecognition')) {
-      const { SpeechRecognition } = window.Capacitor.Plugins;
+    const isNative = Capacitor.isNativePlatform() || 
+                     (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) || 
+                     (window.Capacitor && window.Capacitor.getPlatform() !== 'web');
+
+    // 1. NATIVE CAPACITOR FLOW (for compiled Android APK / iOS App)
+    if (isNative) {
       try {
+        const SpeechRecognitionPlugin = window.Capacitor?.Plugins?.SpeechRecognition;
+
+        if (!SpeechRecognitionPlugin) {
+          setSpeechError('Microphone access is unavailable on this device build. Please ensure Android Speech Plugin is synced.');
+          setTimeout(() => setSpeechError(''), 5000);
+          return;
+        }
+
         if (isListening) {
-          await SpeechRecognition.stop();
+          await SpeechRecognitionPlugin.stop();
           setIsListening(false);
           return;
         }
 
-        // 1. Check runtime permission status
+        // STEP A: Check runtime microphone permission
         let permResult;
-        if (typeof SpeechRecognition.checkPermissions === 'function') {
-          permResult = await SpeechRecognition.checkPermissions();
-        } else if (typeof SpeechRecognition.hasPermission === 'function') {
-          const res = await SpeechRecognition.hasPermission();
+        if (typeof SpeechRecognitionPlugin.checkPermissions === 'function') {
+          permResult = await SpeechRecognitionPlugin.checkPermissions();
+        } else if (typeof SpeechRecognitionPlugin.hasPermission === 'function') {
+          const res = await SpeechRecognitionPlugin.hasPermission();
           permResult = { speechRecognition: res.hasPermission ? 'granted' : 'prompt' };
         }
 
         let isGranted = permResult?.speechRecognition === 'granted' || permResult?.permission === true;
 
-        // 2. Request permission if not yet granted (triggers Android system dialog)
+        // STEP B: Request microphone permission if not yet granted (triggers native Android system dialog)
         if (!isGranted) {
           let reqResult;
-          if (typeof SpeechRecognition.requestPermissions === 'function') {
-            reqResult = await SpeechRecognition.requestPermissions();
+          if (typeof SpeechRecognitionPlugin.requestPermissions === 'function') {
+            reqResult = await SpeechRecognitionPlugin.requestPermissions();
             isGranted = reqResult?.speechRecognition === 'granted';
-          } else if (typeof SpeechRecognition.requestPermission === 'function') {
-            reqResult = await SpeechRecognition.requestPermission();
+          } else if (typeof SpeechRecognitionPlugin.requestPermission === 'function') {
+            reqResult = await SpeechRecognitionPlugin.requestPermission();
             isGranted = reqResult?.permission === true || reqResult?.granted === true;
           }
         }
 
-        // 3. Handle permission denial
+        // STEP C: Handle permission denial
         if (!isGranted) {
           setSpeechError('Microphone access is needed for voice search. Please enable it in phone Settings > Apps > TN NGO Connect > Permissions');
           setTimeout(() => setSpeechError(''), 6000);
@@ -74,20 +86,23 @@ export function useVoiceSearch(onTranscriptReceived) {
           return;
         }
 
-        // 4. Start speech recognition only after permission is confirmed granted
+        // STEP D: Listen and start native speech recognition
         setIsListening(true);
-        await SpeechRecognition.start({
+
+        if (typeof SpeechRecognitionPlugin.addListener === 'function') {
+          await SpeechRecognitionPlugin.addListener('partialResults', (data) => {
+            if (data.matches && data.matches.length > 0 && onTranscriptReceived) {
+              onTranscriptReceived(data.matches[0]);
+            }
+          });
+        }
+
+        await SpeechRecognitionPlugin.start({
           language: getRecognitionLang(),
           maxResults: 2,
           prompt: 'Speak now to search...',
           partialResults: true,
           popup: false
-        });
-
-        SpeechRecognition.addListener('partialResults', (data) => {
-          if (data.matches && data.matches.length > 0 && onTranscriptReceived) {
-            onTranscriptReceived(data.matches[0]);
-          }
         });
 
         return;

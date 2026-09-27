@@ -115,7 +115,7 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Search by district, city, or service (e.g., Chennai, Eye Camp)..."
-              className="w-full pl-3 pr-10 py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 bg-transparent focus:outline-none font-medium"
+              className="w-full pl-3 pr-10 py-2 text-xs sm:text-sm text-slate-900 focus:text-slate-900 placeholder:text-slate-400 bg-transparent focus:outline-none font-semibold"
             />
 
             {/* Microphone Voice Search Button */}

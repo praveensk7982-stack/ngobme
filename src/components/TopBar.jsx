@@ -146,7 +146,7 @@ export default function TopBar({
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
               placeholder={t('common.searchPlaceholder')}
-              className="w-full pl-10 pr-16 py-2.5 bg-slate-100/80 hover:bg-slate-100 focus:bg-white border border-transparent focus:border-blue-500 rounded-2xl text-xs sm:text-sm text-slate-900 focus:text-slate-900 font-semibold placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all duration-200"
+              className="w-full pl-10 pr-16 py-2.5 bg-slate-100/80 hover:bg-slate-100 focus:bg-white border border-transparent focus:border-blue-500 rounded-2xl text-xs sm:text-sm text-slate-900 focus:text-slate-900 placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all duration-200"
             />
 
             {/* Right Icons: Clear Button + Voice Mic Icon */}

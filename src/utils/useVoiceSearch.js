@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
- * Reusable Voice Search Hook using Web Speech API
+ * Reusable Voice Search Hook using Web Speech API & Capacitor Native Plugin Support
  * Automatically detects active i18n language ('en-IN', 'ta-IN', 'hi-IN')
  */
 export function useVoiceSearch(onTranscriptReceived) {
@@ -30,13 +30,56 @@ export function useVoiceSearch(onTranscriptReceived) {
     return 'en-IN';
   };
 
-  const toggleVoiceSearch = () => {
+  const toggleVoiceSearch = async () => {
     setSpeechError('');
+
+    // Check if running inside Capacitor with native SpeechRecognition plugin
+    if (window.Capacitor?.isPluginAvailable('SpeechRecognition')) {
+      const { SpeechRecognition } = window.Capacitor.Plugins;
+      try {
+        if (isListening) {
+          await SpeechRecognition.stop();
+          setIsListening(false);
+          return;
+        }
+
+        const { hasPermission } = await SpeechRecognition.hasPermission();
+        if (!hasPermission) {
+          const { permission } = await SpeechRecognition.requestPermission();
+          if (!permission) {
+            setSpeechError('Microphone permission denied on device.');
+            setTimeout(() => setSpeechError(''), 4000);
+            return;
+          }
+        }
+
+        setIsListening(true);
+        await SpeechRecognition.start({
+          language: getRecognitionLang(),
+          maxResults: 2,
+          prompt: 'Speak now to search...',
+          partialResults: true,
+          popup: false
+        });
+
+        SpeechRecognition.addListener('partialResults', (data) => {
+          if (data.matches && data.matches.length > 0 && onTranscriptReceived) {
+            onTranscriptReceived(data.matches[0]);
+          }
+        });
+        return;
+      } catch (nativeErr) {
+        console.warn('Capacitor native speech error:', nativeErr);
+        setIsListening(false);
+      }
+    }
+
+    // Standard Web Speech API Fallback
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setSpeechError('Voice search is not supported in this browser.');
-      setTimeout(() => setSpeechError(''), 4000);
+      setSpeechError('Voice search is not supported on this browser or WebView. Install Android Speech Plugin for APK support.');
+      setTimeout(() => setSpeechError(''), 5000);
       return;
     }
 
@@ -76,10 +119,28 @@ export function useVoiceSearch(onTranscriptReceived) {
       recognition.onerror = (event) => {
         console.warn('Speech recognition error:', event.error);
         setIsListening(false);
-        if (event.error !== 'no-speech') {
-          setSpeechError('Could not recognize voice. Please try again.');
-          setTimeout(() => setSpeechError(''), 4000);
+        
+        switch (event.error) {
+          case 'not-allowed':
+          case 'permission-denied':
+            setSpeechError('Microphone permission denied. Enable microphone access in settings.');
+            break;
+          case 'audio-capture':
+            setSpeechError('No microphone hardware detected.');
+            break;
+          case 'service-not-allowed':
+            setSpeechError('Speech recognition service unavailable on Android WebView.');
+            break;
+          case 'network':
+            setSpeechError('Network connection required for voice recognition.');
+            break;
+          case 'no-speech':
+            setSpeechError('No speech detected. Please speak clearly.');
+            break;
+          default:
+            setSpeechError('Could not recognize voice. Please try again.');
         }
+        setTimeout(() => setSpeechError(''), 4500);
       };
 
       recognition.onend = () => {

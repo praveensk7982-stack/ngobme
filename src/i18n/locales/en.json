@@ -226,6 +226,21 @@
       "other": "General Emergency"
     }
   },
+  "volunteer": {
+    "applyModalTitle": "Volunteer Application",
+    "applyFor": "Applying for",
+    "applicantName": "Full Name *",
+    "mobileNumber": "Mobile Contact Number *",
+    "emailAddress": "Email Address (Optional)",
+    "whyVolunteer": "Why do you want to volunteer for this drive? (Optional)",
+    "confirmBloodGroup": "Blood Group Confirmation *",
+    "submitApplication": "Submit Application",
+    "submitting": "Submitting Application...",
+    "applySuccess": "Application Submitted Successfully!",
+    "applySuccessSub": "will review your application and contact you soon.",
+    "alreadyApplied": "Applied ✓",
+    "applyNow": "Apply Now →"
+  },
   "districts": {
     "Ariyalur": "Ariyalur",
     "Chengalpattu": "Chengalpattu",

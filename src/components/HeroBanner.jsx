@@ -1,18 +1,25 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Search, Mic, MicOff, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
 import { ALL_TN_DISTRICTS } from '../data/mockData';
+import { useVoiceSearch } from '../utils/useVoiceSearch';
 
 export default function HeroBanner({ selectedDistrict: propDistrict, setSelectedDistrict: propSetDistrict }) {
   const { t } = useTranslation();
   const [district, setDistrict] = useState(propDistrict || 'All Districts');
   const [searchText, setSearchText] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [voiceError, setVoiceError] = useState('');
-  const recognitionRef = useRef(null);
 
   const navigate = useNavigate();
+
+  // Reusable voice search hook
+  const { isListening, speechError: voiceError, toggleVoiceSearch } = useVoiceSearch((transcript) => {
+    setSearchText(transcript);
+  });
+
+  const handleVoiceSearch = () => {
+    toggleVoiceSearch();
+  };
 
   const handleDistrictSearchSubmit = (e) => {
     if (e) e.preventDefault();
@@ -31,65 +38,6 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
 
     const queryStr = searchParams.toString();
     navigate(`/ngo-directory${queryStr ? `?${queryStr}` : ''}`);
-  };
-
-  const handleVoiceSearch = () => {
-    setVoiceError('');
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      setVoiceError('Voice search is not supported in this browser.');
-      setTimeout(() => setVoiceError(''), 4000);
-      return;
-    }
-
-    if (isListening) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      setIsListening(false);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognitionRef.current = recognition;
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-IN';
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript) {
-          setSearchText(transcript);
-        }
-        setIsListening(false);
-      };
-
-      recognition.onerror = (event) => {
-        console.warn('Speech recognition error:', event.error);
-        setIsListening(false);
-        if (event.error !== 'no-speech') {
-          setVoiceError('Could not recognize voice. Please try again.');
-          setTimeout(() => setVoiceError(''), 4000);
-        }
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognition.start();
-    } catch (err) {
-      console.error('Speech recognition exception:', err);
-      setIsListening(false);
-      setVoiceError('Voice search initialization failed.');
-      setTimeout(() => setVoiceError(''), 4000);
-    }
   };
 
   return (

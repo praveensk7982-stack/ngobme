@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
   Home, 
@@ -21,15 +21,19 @@ import { useAuth } from '../context/AuthContext';
 export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotificationsCount = 12 }) {
   const { t } = useTranslation();
   const { user, role } = useAuth();
+  const location = useLocation();
+
+  const currentPath = location.pathname;
+  const currentSearch = location.search;
 
   const navItems = user && role === 'admin' ? [
-    { to: '/admin', label: 'Admin Dashboard', icon: ShieldCheck, badge: 'CONTROL', end: true },
-    { to: '/admin?tab=camps', label: 'Camps & Events Control', icon: CalendarHeart, badge: null },
-    { to: '/admin?tab=emergency_alerts', label: 'State Emergency Alerts', icon: Siren, badge: 'LIVE' },
-    { to: '/admin?tab=community_reports', label: 'Community Reports', icon: AlertTriangle, badge: null },
-    { to: '/admin?tab=ngos', label: 'NGO Approvals Queue', icon: Building2, badge: null },
-    { to: '/settings', label: 'System Settings', icon: Settings, badge: null },
-    { to: '/', label: 'View Public Portal', icon: Home, badge: 'PREVIEW' }
+    { to: '/admin', tabId: null, label: 'Admin Dashboard', icon: ShieldCheck, badge: 'CONTROL', end: true },
+    { to: '/admin?tab=camps', tabId: 'camps', label: 'Camps & Events Control', icon: CalendarHeart, badge: null },
+    { to: '/admin?tab=emergency_alerts', tabId: 'emergency_alerts', label: 'State Emergency Alerts', icon: Siren, badge: 'LIVE' },
+    { to: '/admin?tab=community_reports', tabId: 'community_reports', label: 'Community Reports', icon: AlertTriangle, badge: null },
+    { to: '/admin?tab=ngos', tabId: 'ngos', label: 'NGO Approvals Queue', icon: Building2, badge: null },
+    { to: '/settings', tabId: null, label: 'System Settings', icon: Settings, badge: null },
+    { to: '/', tabId: null, label: 'View Public Portal', icon: Home, badge: 'PREVIEW' }
   ] : [
     { to: '/', labelKey: 'nav.home', icon: Home, badge: null, end: true },
     { to: '/ngo-directory', labelKey: 'nav.ngoDirectory', icon: Building2, badge: null },
@@ -42,6 +46,32 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
     { to: '/notifications', labelKey: 'nav.notifications', icon: Bell, badge: unreadNotificationsCount },
     { to: '/settings', labelKey: 'nav.settings', icon: Settings, badge: null },
   ];
+
+  const isItemActive = (item) => {
+    // 1. Admin Routing active check
+    if (user && role === 'admin') {
+      if (currentPath.startsWith('/admin')) {
+        const currentParams = new URLSearchParams(currentSearch);
+        const activeTab = currentParams.get('tab');
+
+        if (!item.to.startsWith('/admin')) {
+          return false;
+        }
+
+        if (item.tabId === null) {
+          return !activeTab;
+        }
+
+        return activeTab === item.tabId;
+      }
+    }
+
+    // 2. Standard Public Routing active check
+    if (item.end || item.to === '/') {
+      return currentPath === item.to;
+    }
+    return currentPath === item.to.split('?')[0];
+  };
 
   return (
     <>
@@ -98,39 +128,35 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 custom-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const active = isItemActive(item);
 
             return (
-              <NavLink
+              <Link
                 key={item.to}
                 to={item.to}
-                end={item.end}
                 onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `
+                className={`
                   w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold
                   transition-all duration-200 group
-                  ${isActive 
+                  ${active 
                     ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-bold border border-blue-400/30 translate-x-1' 
                     : 'text-slate-300 hover:bg-slate-800/80 hover:text-white hover:translate-x-0.5'
                   }
                 `}
               >
-                {({ isActive }) => (
-                  <>
-                    <div className="flex items-center gap-3">
-                      <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-amber-300' : 'text-slate-400 group-hover:text-blue-300'}`} />
-                      <span>{item.label || t(item.labelKey)}</span>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${active ? 'text-amber-300' : 'text-slate-400 group-hover:text-blue-300'}`} />
+                  <span>{item.label || t(item.labelKey)}</span>
+                </div>
 
-                    {item.badge ? (
-                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full text-white shadow-sm ${
-                        item.badge === 'LIVE' ? 'bg-rose-600 animate-pulse' : 'bg-amber-500 text-slate-950 font-black'
-                      }`}>
-                        {item.badge}
-                      </span>
-                    ) : null}
-                  </>
-                )}
-              </NavLink>
+                {item.badge ? (
+                  <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full text-white shadow-sm ${
+                    item.badge === 'LIVE' ? 'bg-rose-600 animate-pulse' : 'bg-amber-500 text-slate-950 font-black'
+                  }`}>
+                    {item.badge}
+                  </span>
+                ) : null}
+              </Link>
             );
           })}
         </div>

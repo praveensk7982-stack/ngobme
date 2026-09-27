@@ -24,6 +24,8 @@ import { INITIAL_NOTIFICATIONS, getCombinedSearchData } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
 
+import { useVoiceSearch } from '../utils/useVoiceSearch';
+
 export default function TopBar({ 
   searchQuery, 
   setSearchQuery, 
@@ -33,7 +35,7 @@ export default function TopBar({
   onClearNotifications
 }) {
   const { t } = useTranslation();
-  const { user: authUser, role, logout } = useAuth();
+  const { user: authUser, role } = useAuth();
   
   const user = authUser || {
     name: 'Dharshini Raj',
@@ -42,97 +44,22 @@ export default function TopBar({
     badge: 'Verified Volunteer Lead'
   };
   
-  const [isListening, setIsListening] = useState(false);
-  const [speechError, setSpeechError] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   
   const blurTimeoutRef = useRef(null);
-  const recognitionRef = useRef(null);
   const navigate = useNavigate();
 
-  // Cleanup speech recognition on unmount
-  useEffect(() => {
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          // ignore
-        }
-      }
-      if (blurTimeoutRef.current) {
-        clearTimeout(blurTimeoutRef.current);
-      }
-    };
-  }, []);
+  // Use reusable Voice Search Hook
+  const { isListening, speechError, toggleVoiceSearch } = useVoiceSearch((transcript) => {
+    setSearchQuery(transcript);
+    setIsFocused(true);
+  });
 
   const toggleMic = () => {
-    setSpeechError('');
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      setSpeechError('Voice search not supported in this browser.');
-      setTimeout(() => setSpeechError(''), 4000);
-      return;
-    }
-
-    if (isListening) {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          // ignore
-        }
-      }
-      setIsListening(false);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognitionRef.current = recognition;
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-IN';
-
-      recognition.onstart = () => {
-        setIsListening(true);
-        setIsFocused(true);
-      };
-
-      recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        if (transcript) {
-          setSearchQuery(transcript);
-          setIsFocused(true);
-        }
-      };
-
-      recognition.onerror = (event) => {
-        console.warn('Speech recognition error:', event.error);
-        setIsListening(false);
-        if (event.error !== 'no-speech') {
-          setSpeechError('Could not recognize voice. Please try again.');
-          setTimeout(() => setSpeechError(''), 4000);
-        }
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognition.start();
-    } catch (err) {
-      console.error('Speech recognition error:', err);
-      setIsListening(false);
-      setSpeechError('Voice search failed to start.');
-      setTimeout(() => setSpeechError(''), 4000);
-    }
+    toggleVoiceSearch();
+    setIsFocused(true);
   };
 
   const handleFocus = () => {
@@ -159,12 +86,14 @@ export default function TopBar({
 
   const handleSelectResult = (item) => {
     setIsFocused(false);
+    setSearchQuery(''); // Clear search query upon selection
+
     if (item.type === 'ngo') {
-      navigate('/ngo-directory');
+      navigate(`/ngo-directory?q=${encodeURIComponent(item.title)}&id=${item.id}`);
     } else if (item.type === 'camp') {
-      navigate('/camps-events');
+      navigate(`/camps-events?id=${item.id}`);
     } else if (item.type === 'category') {
-      navigate(`/search?q=${encodeURIComponent(item.title)}`);
+      navigate(`/ngo-directory?category=${encodeURIComponent(item.title)}`);
     } else {
       navigate(`/search?q=${encodeURIComponent(item.title)}`);
     }

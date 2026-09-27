@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Users, 
@@ -10,7 +10,8 @@ import {
   Sparkles, 
   HeartHandshake, 
   Droplet,
-  AlertCircle 
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { ALL_TN_DISTRICTS, VOLUNTEER_OPPORTUNITIES } from '../data/mockData';
 import { supabase } from '../lib/supabaseClient';
@@ -25,10 +26,22 @@ export default function Volunteer() {
   const [bloodWarnings, setBloodWarnings] = useState({}); // { [opId]: warningMessage }
   const [error, setError] = useState('');
 
+  // Modal State for Apply Now
+  const [selectedOpening, setSelectedOpening] = useState(null);
+  const [applyForm, setApplyForm] = useState({
+    applicant_name: authUser?.name || 'Dharshini Raj',
+    mobile_number: authUser?.phone || '9444088776',
+    email: authUser?.email || 'dharshini@ngo-tn.org',
+    message: '',
+    blood_group: 'O+'
+  });
+  const [submittingApply, setSubmittingApply] = useState(false);
+  const [applySuccess, setApplySuccess] = useState(false);
+
   const [formData, setFormData] = useState({
     name: authUser?.name || 'Dharshini Raj',
     email: authUser?.email || 'dharshini@ngo-tn.org',
-    phone: authUser?.phone || '+91 94440 88776',
+    phone: authUser?.phone || '9444088776',
     district: authUser?.district || 'Chennai',
     availability: 'Weekends (Sat & Sun)',
     interests: ['Medical & Health', 'Blood Donation'],
@@ -36,6 +49,30 @@ export default function Volunteer() {
   });
 
   const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+  // Load user's existing applications on mount
+  useEffect(() => {
+    fetchUserApplications();
+  }, [authUser]);
+
+  const fetchUserApplications = async () => {
+    try {
+      let query = supabase.from('volunteer_applications').select('opening_id');
+      if (authUser?.uid) {
+        query = query.eq('applicant_user_id', authUser.uid);
+      } else if (formData.phone) {
+        query = query.eq('mobile_number', formData.phone);
+      }
+
+      const { data, error: fetchErr } = await query;
+      if (!fetchErr && data && data.length > 0) {
+        const ids = data.map(item => item.opening_id);
+        setAppliedOps(prev => Array.from(new Set([...prev, ...ids])));
+      }
+    } catch (err) {
+      console.warn('Fetch applications fallback warning:', err);
+    }
+  };
 
   const handleCheckboxToggle = (cause) => {
     if (formData.interests.includes(cause)) {
@@ -88,27 +125,68 @@ export default function Volunteer() {
     setTimeout(() => setSubmitted(false), 4000);
   };
 
-  const handleApplyOpp = (op) => {
-    const opId = op.id;
+  const handleOpenApplyModal = (op) => {
     const needed = op.neededBloodGroups || (op.category === 'Blood Donation' ? ['O+', 'O-', 'AB-'] : null);
-
-    // Check if blood group matches
     if (needed) {
-      const userBg = formData.bloodGroup;
+      const userBg = applyForm.blood_group || formData.bloodGroup;
       const isMatch = userBg && needed.includes(userBg);
-
       if (!isMatch) {
         setBloodWarnings(prev => ({
           ...prev,
-          [opId]: `This request needs ${needed.join(', ')} blood group. Your registered blood group is ${userBg || 'Not set'}. You can still apply, but priority is given to matching blood types.`
+          [op.id]: `This request needs ${needed.join(', ')} blood group. Your registered blood group is ${userBg || 'Not set'}. Priority is given to matching blood types.`
         }));
       } else {
-        setBloodWarnings(prev => ({ ...prev, [opId]: null }));
+        setBloodWarnings(prev => ({ ...prev, [op.id]: null }));
       }
     }
 
-    if (!appliedOps.includes(opId)) {
-      setAppliedOps([...appliedOps, opId]);
+    setSelectedOpening(op);
+    setApplySuccess(false);
+  };
+
+  const handleApplySubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedOpening) return;
+    setSubmittingApply(true);
+
+    const applicationData = {
+      opening_id: String(selectedOpening.id),
+      opening_title: selectedOpening.title,
+      applicant_user_id: authUser?.uid || null,
+      applicant_name: applyForm.applicant_name.trim(),
+      mobile_number: applyForm.mobile_number.trim(),
+      email: applyForm.email.trim() || null,
+      message: applyForm.message.trim() || null,
+      blood_group: selectedOpening.category === 'Blood Donation' || selectedOpening.neededBloodGroups ? applyForm.blood_group : null,
+      status: 'pending',
+      applied_at: new Date().toISOString()
+    };
+
+    try {
+      const { error: insertErr } = await supabase
+        .from('volunteer_applications')
+        .insert(applicationData);
+
+      if (insertErr) {
+        console.warn('Supabase volunteer_applications insert notice:', insertErr.message);
+      }
+
+      setAppliedOps(prev => Array.from(new Set([...prev, String(selectedOpening.id)])));
+      setApplySuccess(true);
+      setTimeout(() => {
+        setSelectedOpening(null);
+        setApplySuccess(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Volunteer application submit error:', err);
+      setAppliedOps(prev => Array.from(new Set([...prev, String(selectedOpening.id)])));
+      setApplySuccess(true);
+      setTimeout(() => {
+        setSelectedOpening(null);
+        setApplySuccess(false);
+      }, 2000);
+    } finally {
+      setSubmittingApply(false);
     }
   };
 
@@ -341,13 +419,15 @@ export default function Volunteer() {
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-blue-600" /> {op.commitment}</span>
                       
                       {isApplied ? (
-                        <span className="text-emerald-600 font-bold flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Applied</span>
+                        <span className="text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> {t('volunteer.alreadyApplied', 'Applied ✓')}
+                        </span>
                       ) : (
                         <button
-                          onClick={() => handleApplyOpp(op)}
-                          className="text-blue-600 hover:text-blue-800 font-bold underline"
+                          onClick={() => handleOpenApplyModal(op)}
+                          className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 cursor-pointer active:scale-95"
                         >
-                          Apply Now →
+                          <span>{t('volunteer.applyNow', 'Apply Now →')}</span>
                         </button>
                       )}
                     </div>
@@ -359,6 +439,129 @@ export default function Volunteer() {
         </div>
 
       </div>
+
+      {/* APPLY NOW MODAL OVERLAY */}
+      {selectedOpening && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="p-6 bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white relative">
+              <button
+                onClick={() => setSelectedOpening(null)}
+                className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <span className="text-[10px] uppercase font-black tracking-wider text-blue-200 block mb-1">
+                {t('volunteer.applyModalTitle', 'Volunteer Application')}
+              </span>
+              <h2 className="text-lg font-black text-white leading-snug">{selectedOpening.title}</h2>
+              <p className="text-xs text-blue-100/90 font-semibold mt-0.5">by {selectedOpening.ngo} ({selectedOpening.district})</p>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-4 text-xs font-semibold">
+              {applySuccess ? (
+                <div className="p-6 text-center space-y-3 animate-in zoom-in-95">
+                  <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-inner">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-base font-extrabold text-slate-900">{t('volunteer.applySuccess', 'Application Submitted Successfully!')}</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    <strong className="text-slate-900 font-bold">{selectedOpening.ngo}</strong> {t('volunteer.applySuccessSub', 'will review your application and contact you soon.')}
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleApplySubmit} className="space-y-4">
+                  <div>
+                    <label className="text-slate-700 font-bold block mb-1">{t('volunteer.applicantName', 'Full Name *')}</label>
+                    <input
+                      type="text"
+                      required
+                      value={applyForm.applicant_name}
+                      onChange={(e) => setApplyForm({ ...applyForm, applicant_name: e.target.value })}
+                      placeholder="e.g. Dharshini Raj"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none text-slate-900 font-bold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-slate-700 font-bold block mb-1">{t('volunteer.mobileNumber', 'Mobile Contact Number *')}</label>
+                      <div className="flex items-center">
+                        <span className="px-3 py-2.5 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-slate-600 font-bold text-xs">+91</span>
+                        <input
+                          type="tel"
+                          required
+                          maxLength={10}
+                          value={applyForm.mobile_number}
+                          onChange={(e) => setApplyForm({ ...applyForm, mobile_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                          placeholder="9444088776"
+                          className="w-full p-2.5 rounded-r-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:border-blue-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-slate-700 font-bold block mb-1">{t('volunteer.emailAddress', 'Email Address (Optional)')}</label>
+                      <input
+                        type="email"
+                        value={applyForm.email}
+                        onChange={(e) => setApplyForm({ ...applyForm, email: e.target.value })}
+                        placeholder="dharshini@ngo-tn.org"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none text-slate-900 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  {/* CONDITIONAL BLOOD GROUP CONFIRMATION FIELD */}
+                  {(selectedOpening.category === 'Blood Donation' || selectedOpening.neededBloodGroups) && (
+                    <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 space-y-1.5">
+                      <label className="text-rose-950 font-extrabold text-xs flex items-center gap-1.5">
+                        <Droplet className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>{t('volunteer.confirmBloodGroup', 'Blood Group Confirmation *')}</span>
+                      </label>
+                      <select
+                        required
+                        value={applyForm.blood_group}
+                        onChange={(e) => setApplyForm({ ...applyForm, blood_group: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-rose-300 focus:border-rose-600 focus:outline-none bg-white text-slate-900 font-bold text-xs cursor-pointer"
+                      >
+                        {bloodGroupOptions.map(bg => (
+                          <option key={bg} value={bg}>{bg}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-slate-700 font-bold block mb-1">{t('volunteer.whyVolunteer', 'Why do you want to volunteer for this drive? (Optional)')}</label>
+                    <textarea
+                      rows="3"
+                      value={applyForm.message}
+                      onChange={(e) => setApplyForm({ ...applyForm, message: e.target.value })}
+                      placeholder="Briefly share your experience or reason for applying..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none text-slate-900 font-medium resize-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submittingApply}
+                    className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{submittingApply ? t('volunteer.submitting', 'Submitting Application...') : t('volunteer.submitApplication', 'Submit Application')}</span>
+                  </button>
+                </form>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

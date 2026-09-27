@@ -18,6 +18,7 @@ import MyActivity from './pages/MyActivity';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import SearchResults from './pages/SearchResults';
+import Emergency from './pages/Emergency';
 import AdminDashboard from './pages/admin/AdminDashboard';
 
 // Auth Pages
@@ -102,6 +103,7 @@ export default function App() {
               } 
             />
 
+            <Route path="/emergency" element={<Emergency />} />
             <Route path="/volunteer" element={<Volunteer />} />
             <Route path="/donate" element={<Donate />} />
             <Route path="/find-help" element={<FindHelp />} />
@@ -118,14 +120,15 @@ export default function App() {
               } 
             />
 
-            {/* STRICT PROTECTED ADMIN ROUTE */}
+            {/* STRICT PROTECTED ADMIN ROUTES (Only accessible if role === 'admin') */}
             <Route element={<AdminProtectedRoute />}>
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
             </Route>
           </Route>
         </Route>
 
-        {/* Catch-all Fallback -> Redirect to Home if logged in, or ProtectedRoute will redirect to /login */}
+        {/* Catch-all Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

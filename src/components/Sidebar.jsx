@@ -12,16 +12,20 @@ import {
   Bell, 
   Settings,
   X,
-  ShieldCheck
+  ShieldCheck,
+  Siren
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotificationsCount = 12 }) {
   const { t } = useTranslation();
+  const { role } = useAuth();
 
   const navItems = [
     { to: '/', labelKey: 'nav.home', icon: Home, badge: null, end: true },
     { to: '/ngo-directory', labelKey: 'nav.ngoDirectory', icon: Building2, badge: null },
     { to: '/camps-events', labelKey: 'nav.campsEvents', icon: CalendarHeart, badge: null },
+    { to: '/emergency', labelKey: 'nav.emergency', icon: Siren, badge: 'LIVE' },
     { to: '/volunteer', labelKey: 'nav.volunteer', icon: Users, badge: null },
     { to: '/donate', labelKey: 'nav.donate', icon: HeartHandshake, badge: null },
     { to: '/find-help', labelKey: 'nav.findHelp', icon: Search, badge: null },
@@ -29,6 +33,10 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
     { to: '/notifications', labelKey: 'nav.notifications', icon: Bell, badge: unreadNotificationsCount },
     { to: '/settings', labelKey: 'nav.settings', icon: Settings, badge: null },
   ];
+
+  if (role === 'admin') {
+    navItems.push({ to: '/admin', labelKey: 'nav.adminConsole', icon: ShieldCheck, badge: 'ADMIN' });
+  }
 
   return (
     <>
@@ -109,7 +117,9 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
                     </div>
 
                     {item.badge ? (
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-500 text-white shadow-sm animate-pulse">
+                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full text-white shadow-sm ${
+                        item.badge === 'LIVE' ? 'bg-rose-600 animate-pulse' : 'bg-amber-500 text-slate-950 font-black'
+                      }`}>
                         {item.badge}
                       </span>
                     ) : null}

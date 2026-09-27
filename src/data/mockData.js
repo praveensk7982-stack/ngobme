@@ -162,6 +162,8 @@ export const FEATURED_NGOS = [
     logoBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
     logoInitials: 'ASV',
     description: 'Providing free after-school coaching, digital literacy, and educational supplies to underprivileged children across North Chennai.',
+    description_ta: 'வட சென்னையில் உள்ள ஏழை குழந்தைகளுக்கு இலவச மாலை நேரக் கல்வி, டிஜிட்டல் அறிவு மற்றும் கல்வி உபகரணங்களை வழங்குதல்.',
+    description_hi: 'उत्तरी चेन्नई में वंचित बच्चों को मुफ्त शाम की कोचिंग, डिजिटल साक्षरता और शैक्षिक सामग्री प्रदान करना।',
     verified: true,
     impact: '15,000+ students supported'
   },
@@ -177,6 +179,8 @@ export const FEATURED_NGOS = [
     logoBg: 'bg-gradient-to-br from-emerald-500 to-teal-700',
     logoInitials: 'PTG',
     description: 'Dedicated to urban afforestation, Miyawaki forests, lake rejuvenation, and plastic-free drives around Western Ghats foothills.',
+    description_ta: 'மேற்குத் தொடர்ச்சி மலை அடிவாரத்தில் நகர்ப்புற காடமைப்பு, மியாவாக்கி காடுகள், ஏரிகள் சீரமைப்பு மற்றும் பிளாஸ்டிக் இல்லா விழிப்புணர்வு இயக்கங்களில் செயல்படுகிறது.',
+    description_hi: 'पश्चिमी घाट की तलहटी के आसपास शहरी वनीकरण, मियावाकी वन, झील पुनरुद्धार और प्लास्टिक-मुक्त अभियानों के लिए समर्पित।',
     verified: true,
     impact: '1.2 Lakh trees planted'
   },
@@ -192,6 +196,8 @@ export const FEATURED_NGOS = [
     logoBg: 'bg-gradient-to-br from-rose-500 to-red-700',
     logoInitials: 'UTB',
     description: '24/7 emergency blood & platelet matching network connecting hospitals and rare blood donors across Southern Tamil Nadu.',
+    description_ta: 'தென் தமிழ்நாடு முழுவதும் மருத்துவமனைகளையும் அரிதான இரத்தக் கொடையாளர்களையும் இணைக்கும் 24/7 அவசர இரத்த தான சேவை நெட்வொர்க்.',
+    description_hi: 'दक्षिण तमिलनाडु में अस्पतालों और दुर्लभ रक्तदाताओं को जोड़ने वाला 24/7 आपातकालीन रक्त और प्लेटलेट नेटवर्क।',
     verified: true,
     impact: '28,000+ lives saved'
   },
@@ -207,6 +213,8 @@ export const FEATURED_NGOS = [
     logoBg: 'bg-gradient-to-br from-purple-500 to-indigo-700',
     logoInitials: 'AEC',
     description: 'Free healthcare checkups, nutrition packages, emotional wellness counselling, and shelter support for destitute senior citizens.',
+    description_ta: 'ஆதரவற்ற முதியோருக்கு இலவச மருத்துவ பரிசோதனை, ஊட்டச்சத்து உணவுகள், மனநல ஆலோசனைகள் மற்றும் புகலிட ஆதரவு வழங்குதல்.',
+    description_hi: 'बेसहारा वरिष्ठ नागरिकों के लिए मुफ्त स्वास्थ्य जांच, पोषण पैकेज, भावनात्मक कल्याण परामर्श और आश्रय सहायता।',
     verified: true,
     impact: '3,400+ elders supported'
   },
@@ -222,6 +230,8 @@ export const FEATURED_NGOS = [
     logoBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
     logoInitials: 'AMF',
     description: 'Serving hot nutritious free meals daily to hospital attendees, daily wage laborers, and shelter homes in Salem & Erode.',
+    description_ta: 'சேலம் மற்றும் ஈரோட்டில் உள்ள மருத்துவமனை நோயாளிகளின் உதவியாளர்கள், கூலித் தொழிலாளர்கள் மற்றும் காப்பகங்களுக்கு தினமும் இலவச சூடான உணவு வழங்குதல்.',
+    description_hi: 'सेलम और ईरोड में अस्पताल परिचारकों, दिहाड़ी मजदूरों और आश्रय गृहों को रोजाना मुफ्त गर्म पौष्टिक भोजन परोसना।',
     verified: true,
     impact: '500,000+ meals served'
   },
@@ -237,6 +247,8 @@ export const FEATURED_NGOS = [
     logoBg: 'bg-gradient-to-br from-pink-500 to-purple-600',
     logoInitials: 'SWE',
     description: 'Vocational tailoring skills, self-help group microloans, and legal aid for rural women across Tirunelveli and Tenkasi.',
+    description_ta: 'திருநெல்வேலி மற்றும் தென்காசி கிராமப்புற பெண்களுக்கு தையல் பயிற்சி, சுயஉதவிக் குழு கடன்கள் மற்றும் சட்ட உதவிகளை வழங்குதல்.',
+    description_hi: 'तिरुनेलवेली और तेनकासी में ग्रामीण महिलाओं के लिए व्यावसायिक सिलाई कौशल, स्वयं सहायता समूह ऋण और कानूनी सहायता।',
     verified: true,
     impact: '4,200+ women empowered'
   },
@@ -252,6 +264,8 @@ export const FEATURED_NGOS = [
     logoBg: 'bg-gradient-to-br from-indigo-500 to-blue-700',
     logoInitials: 'NDC',
     description: 'Custom prosthetic limbs, wheelchair distribution, and speech therapy for children with special needs in Northern TN.',
+    description_ta: 'வட தமிழ்நாட்டின் மாற்றுத்திறனாளி குழந்தைகளுக்கு செயற்கை அவயங்கள், சக்கர நாற்காலிகள் விநியோகம் மற்றும் பேச்சுப் பயிற்சி அளித்தல்.',
+    description_hi: 'उत्तरी तमिलनाडु में विशेष आवश्यकताओं वाले बच्चों के लिए कृत्रिम अंग, व्हीलचेयर वितरण और वाक् थेरेपी।',
     verified: true,
     impact: '1,800+ wheelchairs gifted'
   },
@@ -267,6 +281,8 @@ export const FEATURED_NGOS = [
     logoBg: 'bg-gradient-to-br from-teal-500 to-emerald-700',
     logoInitials: 'KBE',
     description: 'Delta region riverbank afforestation, traditional organic farming workshops, and wetland bird sanctuary conservation.',
+    description_ta: 'டெல்டா பகுதி ஆற்றங்கரை மரக்கன்றுகள் நடுதல், பாரம்பரிய இயற்கை விவசாயப் பயிற்சிகள் மற்றும் ஈரநிலப் பறவைகள் சரணாலயம் பாதுகாப்பு.',
+    description_hi: 'डेल्टा क्षेत्र में नदी तट वनीकरण, पारंपरिक जैविक खेती कार्यशालाएं और आर्द्रभूमि पक्षी अभयारण्य संरक्षण।',
     verified: true,
     impact: '45 Lake bunds restored'
   },
@@ -282,6 +298,8 @@ export const FEATURED_NGOS = [
     logoBg: 'bg-gradient-to-br from-rose-600 to-red-800',
     logoInitials: 'VEA',
     description: 'Free 24/7 emergency rural ambulance service connecting remote tribal hamlets in Jawadhu hills to CMC Vellore hospital.',
+    description_ta: 'ஜவாது மலை கிராமப்புற மலைவாழ் மக்களை வேலூர் சிஎம்சி மருத்துவமனையுடன் இணைக்கும் இலவச 24/7 அவசர ஆம்புலன்ஸ் சேவை.',
+    description_hi: 'जवादी पहाड़ियों के दूरस्थ जनजातीय गांवों को सीएमसी वेल्लोर अस्पताल से जोड़ने वाली मुफ्त 24/7 ग्रामीण एम्बुलेंस सेवा।',
     verified: true,
     impact: '12,500+ patient transports'
   },
@@ -297,6 +315,8 @@ export const FEATURED_NGOS = [
     logoBg: 'bg-gradient-to-br from-cyan-500 to-blue-700',
     logoInitials: 'KRE',
     description: 'Scholarships for rural students, computer labs in government schools, and NEET/JEE free coaching centers.',
+    description_ta: 'கிராமப்புற மாணவர்களுக்கு கல்வி உதவித்தொகை, அரசுப் பள்ளிகளில் கணினி ஆய்வகங்கள் மற்றும் இலவச நீட்/ஜேஇஇ பயிற்சி மையங்கள்.',
+    description_hi: 'ग्रामीण छात्रों के लिए छात्रवृत्ति, सरकारी स्कूलों में कंप्यूटर लैब और नीट/जेईई मुफ्त कोचिंग केंद्र।',
     verified: true,
     impact: '8,900+ scholars funded'
   }

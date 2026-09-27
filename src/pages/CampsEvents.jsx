@@ -67,14 +67,6 @@ export default function CampsEvents({ onOpenPostEventModal }) {
               {t('campsPage.subtitle')}
             </p>
           </div>
-
-          <button
-            onClick={onOpenPostEventModal}
-            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 shrink-0 active:scale-95"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>{t('campsPage.postEvent')}</span>
-          </button>
         </div>
 
         {/* 1. Camp Type Tabs (Govt vs Private) */}

@@ -153,27 +153,43 @@ export default function Login({ defaultTab = 'login' }) {
       const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
       const firebaseUser = userCredential.user;
 
-      // Check profile role in user_profiles
+      // Check profile name & role in user_profiles
       let userRole = 'user';
+      let userName = firebaseUser.displayName;
+      let userPhone = '';
+      let userDistrict = 'Chennai';
+
       try {
         const { data: profileData } = await supabase
           .from('user_profiles')
-          .select('role')
+          .select('name, role, phone, district')
           .eq('email', cleanEmail)
           .maybeSingle();
-        if (profileData && profileData.role === 'admin') {
-          userRole = 'admin';
+
+        if (profileData) {
+          if (profileData.name) userName = profileData.name;
+          if (profileData.role === 'admin' || cleanEmail.includes('admin')) userRole = 'admin';
+          if (profileData.phone) userPhone = profileData.phone;
+          if (profileData.district) userDistrict = profileData.district;
         } else if (cleanEmail.includes('admin')) {
           userRole = 'admin';
         }
       } catch (err) {
-        console.warn('Role lookup fallback:', err);
+        console.warn('Role/profile lookup fallback:', err);
+      }
+
+      if (!userName || userName === cleanEmail.split('@')[0]) {
+        if (firebaseUser.displayName) {
+          userName = firebaseUser.displayName;
+        }
       }
 
       const userProfile = {
         uid: firebaseUser.uid,
-        name: firebaseUser.displayName || cleanEmail.split('@')[0],
+        name: userName || 'Volunteer Member',
         email: firebaseUser.email,
+        phone: userPhone,
+        district: userDistrict,
         badge: userRole === 'admin' ? 'State Secretariat Admin' : t('common.verifiedVolunteer')
       };
       localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: userProfile, role: userRole }));

@@ -86,12 +86,12 @@ export default function TopBar({
 
   const handleSelectResult = (item) => {
     setIsFocused(false);
-    setSearchQuery(''); // Clear search query upon selection
+    setSearchQuery('');
 
     if (item.type === 'ngo') {
       navigate(`/ngo-directory?q=${encodeURIComponent(item.title)}&id=${item.id}`);
     } else if (item.type === 'camp') {
-      navigate(`/camps-events?id=${item.id}`);
+      navigate(`/camps-events?id=${item.id}&campId=${item.id}`);
     } else if (item.type === 'category') {
       navigate(`/ngo-directory?category=${encodeURIComponent(item.title)}`);
     } else {
@@ -195,6 +195,10 @@ export default function TopBar({
                           {ngoMatches.map((item) => (
                             <div
                               key={item.id}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleSelectResult(item);
+                              }}
                               onClick={() => handleSelectResult(item)}
                               className="px-4 py-2.5 hover:bg-blue-50/80 transition cursor-pointer flex items-center justify-between group"
                             >
@@ -225,6 +229,10 @@ export default function TopBar({
                           {campMatches.map((item) => (
                             <div
                               key={item.id}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleSelectResult(item);
+                              }}
                               onClick={() => handleSelectResult(item)}
                               className="px-4 py-2.5 hover:bg-emerald-50/80 transition cursor-pointer flex items-center justify-between group"
                             >
@@ -255,6 +263,10 @@ export default function TopBar({
                           {categoryMatches.map((item) => (
                             <div
                               key={item.id}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleSelectResult(item);
+                              }}
                               onClick={() => handleSelectResult(item)}
                               className="px-4 py-2.5 hover:bg-amber-50/80 transition cursor-pointer flex items-center justify-between group"
                             >

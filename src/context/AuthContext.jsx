@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
 
@@ -10,22 +11,60 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Firebase auth state listener — login/logout/page-refresh எல்லாம் இது handle பண்ணும்
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    // Firebase auth state listener — login/logout/page-refresh handle
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const stored = localStorage.getItem('tn_ngo_auth');
         const parsed = stored ? JSON.parse(stored) : null;
 
-        setUser({
+        let profileName = firebaseUser.displayName || parsed?.user?.name;
+        let profileRole = parsed?.role === 'admin' ? 'admin' : 'user';
+        let profilePhone = parsed?.user?.phone || '';
+        let profileDistrict = parsed?.user?.district || 'Chennai';
+
+        try {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('name, role, phone, district')
+            .eq('email', firebaseUser.email)
+            .maybeSingle();
+
+          if (profile) {
+            if (profile.name) profileName = profile.name;
+            if (profile.role === 'admin') profileRole = 'admin';
+            if (profile.phone) profilePhone = profile.phone;
+            if (profile.district) profileDistrict = profile.district;
+          }
+        } catch (err) {
+          console.warn('AuthContext Supabase profile lookup fallback:', err);
+        }
+
+        // Clean up fallback if name is empty or looks like username email split
+        if (!profileName || profileName === firebaseUser.email?.split('@')[0]) {
+          if (parsed?.user?.name && parsed.user.name !== firebaseUser.email?.split('@')[0]) {
+            profileName = parsed.user.name;
+          } else if (firebaseUser.displayName) {
+            profileName = firebaseUser.displayName;
+          }
+        }
+
+        const badgeText = profileRole === 'admin'
+          ? 'State Secretariat Admin'
+          : (parsed?.user?.badge || 'Verified Volunteer');
+
+        const userObj = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
-          name: firebaseUser.displayName || parsed?.user?.name || firebaseUser.email?.split('@')[0] || 'Volunteer Member',
-          district: parsed?.user?.district || 'Chennai',
-          badge: parsed?.user?.badge || 'Verified Volunteer'
-        });
-        setRole(parsed?.role === 'admin' ? 'admin' : 'user');
+          name: profileName || 'Volunteer Member',
+          phone: profilePhone,
+          district: profileDistrict,
+          badge: badgeText
+        };
+
+        setUser(userObj);
+        setRole(profileRole);
+        localStorage.setItem('tn_ngo_auth', JSON.stringify({ user: userObj, role: profileRole }));
       } else {
-        // Firebase-ல session இல்லன்னா, localStorage-ல demo/mock session இருக்கான்னு பாருங்க
         const stored = localStorage.getItem('tn_ngo_auth');
         const parsed = stored ? JSON.parse(stored) : null;
 

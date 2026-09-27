@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { 
   Calendar, 
@@ -17,10 +18,26 @@ import CampDetailsModal from '../components/CampDetailsModal';
 
 export default function CampsEvents({ onOpenPostEventModal }) {
   const { t, i18n } = useTranslation();
+  const [searchParams] = useSearchParams();
+
   const [campTypeFilter, setCampTypeFilter] = useState('all'); // 'all' | 'government' | 'private'
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
   const [selectedCamp, setSelectedCamp] = useState(null);
   const [registeredEvents, setRegisteredEvents] = useState([]);
+
+  useEffect(() => {
+    if (searchParams.has('id')) {
+      const campId = searchParams.get('id');
+      const found = UPCOMING_EVENTS.find(e => String(e.id) === String(campId));
+      if (found) {
+        setSelectedCamp(found);
+      }
+    }
+    if (searchParams.has('category')) {
+      const cat = searchParams.get('category');
+      if (cat) setSelectedCategoryFilter(cat);
+    }
+  }, [searchParams]);
 
   const categories = ['All', 'Medical', 'Blood', 'Health', 'Environment', 'Education', 'Food'];
 

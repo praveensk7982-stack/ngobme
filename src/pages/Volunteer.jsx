@@ -32,6 +32,7 @@ export default function Volunteer() {
     applicant_name: authUser?.name || 'Dharshini Raj',
     mobile_number: authUser?.phone || '9444088776',
     email: authUser?.email || 'dharshini@ngo-tn.org',
+    place: authUser?.district ? `${authUser.district}, Tamil Nadu` : 'T. Nagar, Chennai',
     message: '',
     blood_group: 'O+'
   });
@@ -156,6 +157,7 @@ export default function Volunteer() {
       applicant_name: applyForm.applicant_name.trim(),
       mobile_number: applyForm.mobile_number.trim(),
       email: applyForm.email.trim() || null,
+      place: applyForm.place.trim(),
       message: applyForm.message.trim() || null,
       blood_group: selectedOpening.category === 'Blood Donation' || selectedOpening.neededBloodGroups ? applyForm.blood_group : null,
       status: 'pending',
@@ -514,6 +516,20 @@ export default function Volunteer() {
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none text-slate-900 font-medium"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="text-slate-700 font-bold block mb-1">
+                      {t('volunteer.applicantPlace', 'Place / Area *')}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={applyForm.place}
+                      onChange={(e) => setApplyForm({ ...applyForm, place: e.target.value })}
+                      placeholder={t('volunteer.applicantPlacePlaceholder', 'e.g. T. Nagar, Chennai')}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none text-slate-900 font-semibold"
+                    />
                   </div>
 
                   {/* CONDITIONAL BLOOD GROUP CONFIRMATION FIELD */}

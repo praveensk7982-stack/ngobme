@@ -232,6 +232,8 @@
     "applicantName": "முழு பெயர் *",
     "mobileNumber": "மொபைல் தொடர்பு எண் *",
     "emailAddress": "மின்னஞ்சல் முகவரி (விருப்பத்தேர்வு)",
+    "applicantPlace": "இடம் / பகுதி *",
+    "applicantPlacePlaceholder": "எ.கா. தி. நகர், சென்னை",
     "whyVolunteer": "நீங்கள் ஏன் இந்த சேவையில் இணைய விரும்புகிறீர்கள்? (விருப்பத்தேர்வு)",
     "confirmBloodGroup": "இரத்தப் பிரிவு உறுதிப்படுத்தல் *",
     "submitApplication": "விண்ணப்பத்தைச் சமர்ப்பி",

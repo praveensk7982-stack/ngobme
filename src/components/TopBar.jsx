@@ -237,7 +237,7 @@ export default function TopBar({
                                   <p className="text-[10px] font-medium text-slate-500">{item.subtext}</p>
                                 </div>
                               </div>
-                              <span className="text-[10px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition">Register →</span>
+                              <span className="text-[10px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition">View Details →</span>
                             </div>
                           ))}
                         </div>

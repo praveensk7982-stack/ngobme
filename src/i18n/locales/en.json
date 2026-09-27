@@ -232,6 +232,8 @@
     "applicantName": "Full Name *",
     "mobileNumber": "Mobile Contact Number *",
     "emailAddress": "Email Address (Optional)",
+    "applicantPlace": "Place / Area *",
+    "applicantPlacePlaceholder": "e.g. T. Nagar, Chennai",
     "whyVolunteer": "Why do you want to volunteer for this drive? (Optional)",
     "confirmBloodGroup": "Blood Group Confirmation *",
     "submitApplication": "Submit Application",

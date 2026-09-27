@@ -232,6 +232,8 @@
     "applicantName": "पूरा नाम *",
     "mobileNumber": "मोबाइल संपर्क नंबर *",
     "emailAddress": "ईमेल पता (वैकल्पिक)",
+    "applicantPlace": "स्थान / क्षेत्र *",
+    "applicantPlacePlaceholder": "जैसे टी. नगर, चेन्नई",
     "whyVolunteer": "आप इस अभियान के लिए स्वयंसेवा क्यों करना चाहते हैं? (वैकल्पिक)",
     "confirmBloodGroup": "रक्त समूह की पुष्टि *",
     "submitApplication": "आवेदन जमा करें",

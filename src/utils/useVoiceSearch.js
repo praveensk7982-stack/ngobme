@@ -43,16 +43,38 @@ export function useVoiceSearch(onTranscriptReceived) {
           return;
         }
 
-        const { hasPermission } = await SpeechRecognition.hasPermission();
-        if (!hasPermission) {
-          const { permission } = await SpeechRecognition.requestPermission();
-          if (!permission) {
-            setSpeechError('Microphone permission denied on device.');
-            setTimeout(() => setSpeechError(''), 4000);
-            return;
+        // 1. Check runtime permission status
+        let permResult;
+        if (typeof SpeechRecognition.checkPermissions === 'function') {
+          permResult = await SpeechRecognition.checkPermissions();
+        } else if (typeof SpeechRecognition.hasPermission === 'function') {
+          const res = await SpeechRecognition.hasPermission();
+          permResult = { speechRecognition: res.hasPermission ? 'granted' : 'prompt' };
+        }
+
+        let isGranted = permResult?.speechRecognition === 'granted' || permResult?.permission === true;
+
+        // 2. Request permission if not yet granted (triggers Android system dialog)
+        if (!isGranted) {
+          let reqResult;
+          if (typeof SpeechRecognition.requestPermissions === 'function') {
+            reqResult = await SpeechRecognition.requestPermissions();
+            isGranted = reqResult?.speechRecognition === 'granted';
+          } else if (typeof SpeechRecognition.requestPermission === 'function') {
+            reqResult = await SpeechRecognition.requestPermission();
+            isGranted = reqResult?.permission === true || reqResult?.granted === true;
           }
         }
 
+        // 3. Handle permission denial
+        if (!isGranted) {
+          setSpeechError('Microphone access is needed for voice search. Please enable it in phone Settings > Apps > TN NGO Connect > Permissions');
+          setTimeout(() => setSpeechError(''), 6000);
+          setIsListening(false);
+          return;
+        }
+
+        // 4. Start speech recognition only after permission is confirmed granted
         setIsListening(true);
         await SpeechRecognition.start({
           language: getRecognitionLang(),
@@ -67,10 +89,14 @@ export function useVoiceSearch(onTranscriptReceived) {
             onTranscriptReceived(data.matches[0]);
           }
         });
+
         return;
       } catch (nativeErr) {
-        console.warn('Capacitor native speech error:', nativeErr);
+        console.error('Capacitor native speech error:', nativeErr);
         setIsListening(false);
+        setSpeechError('Failed to start voice search on device: ' + (nativeErr.message || 'Plugin error'));
+        setTimeout(() => setSpeechError(''), 5000);
+        return;
       }
     }
 

@@ -187,7 +187,7 @@ export default function TopBar({
                     {/* Section 1: NGOs */}
                     {ngoMatches.length > 0 && (
                       <div>
-                        <div className="px-3.5 sm:px-4 py-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-blue-600 bg-blue-50/60 border-y border-blue-100">
+                        <div className="px-3 sm:px-4 py-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-blue-600 bg-blue-50/60 border-y border-blue-100">
                           <Building2 className="w-3 h-3 text-blue-600 shrink-0" />
                           <span>NGOs ({ngoMatches.length})</span>
                         </div>
@@ -200,18 +200,16 @@ export default function TopBar({
                                 handleSelectResult(item);
                               }}
                               onClick={() => handleSelectResult(item)}
-                              className="px-3.5 sm:px-4 py-2.5 hover:bg-blue-50/80 transition cursor-pointer flex items-center justify-between gap-2.5 group w-full min-w-0"
+                              className="px-3 sm:px-4 py-2.5 hover:bg-blue-50/80 transition cursor-pointer flex items-center gap-3 group w-full text-left"
                             >
-                              <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-                                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5 sm:mt-0">
-                                  <Building2 className="w-4 h-4 shrink-0" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition leading-snug break-words">{item.title}</p>
-                                  <p className="text-[10px] font-medium text-slate-500 truncate">{item.subtext}</p>
-                                </div>
+                              <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                <Building2 className="w-4 h-4 shrink-0" />
                               </div>
-                              <span className="text-[10px] font-bold text-blue-600 shrink-0 opacity-0 group-hover:opacity-100 transition hidden sm:inline-block">View →</span>
+                              <div className="flex-1 min-w-0 text-left">
+                                <p className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition leading-snug line-clamp-2 text-left">{item.title}</p>
+                                <p className="text-[10px] font-medium text-slate-500 truncate text-left mt-0.5">{item.subtext}</p>
+                              </div>
+                              <span className="text-[10px] font-bold text-blue-600 shrink-0 opacity-0 group-hover:opacity-100 transition hidden sm:block ml-auto">View →</span>
                             </div>
                           ))}
                         </div>
@@ -221,7 +219,7 @@ export default function TopBar({
                     {/* Section 2: Camps & Events */}
                     {campMatches.length > 0 && (
                       <div>
-                        <div className="px-3.5 sm:px-4 py-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 bg-emerald-50/60 border-y border-emerald-100">
+                        <div className="px-3 sm:px-4 py-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 bg-emerald-50/60 border-y border-emerald-100">
                           <Calendar className="w-3 h-3 text-emerald-600 shrink-0" />
                           <span>Camps & Events ({campMatches.length})</span>
                         </div>
@@ -234,18 +232,16 @@ export default function TopBar({
                                 handleSelectResult(item);
                               }}
                               onClick={() => handleSelectResult(item)}
-                              className="px-3.5 sm:px-4 py-2.5 hover:bg-emerald-50/80 transition cursor-pointer flex items-center justify-between gap-2.5 group w-full min-w-0"
+                              className="px-3 sm:px-4 py-2.5 hover:bg-emerald-50/80 transition cursor-pointer flex items-center gap-3 group w-full text-left"
                             >
-                              <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5 sm:mt-0">
-                                  <Calendar className="w-4 h-4 shrink-0" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-slate-800 group-hover:text-emerald-600 transition leading-snug break-words">{item.title}</p>
-                                  <p className="text-[10px] font-medium text-slate-500 truncate">{item.subtext}</p>
-                                </div>
+                              <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                <Calendar className="w-4 h-4 shrink-0" />
                               </div>
-                              <span className="text-[10px] font-bold text-emerald-600 shrink-0 opacity-0 group-hover:opacity-100 transition hidden sm:inline-block">View Details →</span>
+                              <div className="flex-1 min-w-0 text-left">
+                                <p className="text-xs font-bold text-slate-800 group-hover:text-emerald-600 transition leading-snug line-clamp-2 text-left">{item.title}</p>
+                                <p className="text-[10px] font-medium text-slate-500 truncate text-left mt-0.5">{item.subtext}</p>
+                              </div>
+                              <span className="text-[10px] font-bold text-emerald-600 shrink-0 opacity-0 group-hover:opacity-100 transition hidden sm:block ml-auto">View Details →</span>
                             </div>
                           ))}
                         </div>
@@ -255,7 +251,7 @@ export default function TopBar({
                     {/* Section 3: Categories */}
                     {categoryMatches.length > 0 && (
                       <div>
-                        <div className="px-3.5 sm:px-4 py-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-600 bg-amber-50/60 border-y border-amber-100">
+                        <div className="px-3 sm:px-4 py-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-600 bg-amber-50/60 border-y border-amber-100">
                           <Tag className="w-3 h-3 text-amber-600 shrink-0" />
                           <span>Categories ({categoryMatches.length})</span>
                         </div>
@@ -268,18 +264,16 @@ export default function TopBar({
                                 handleSelectResult(item);
                               }}
                               onClick={() => handleSelectResult(item)}
-                              className="px-3.5 sm:px-4 py-2.5 hover:bg-amber-50/80 transition cursor-pointer flex items-center justify-between gap-2.5 group w-full min-w-0"
+                              className="px-3 sm:px-4 py-2.5 hover:bg-amber-50/80 transition cursor-pointer flex items-center gap-3 group w-full text-left"
                             >
-                              <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-                                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform mt-0.5 sm:mt-0">
-                                  <Tag className="w-4 h-4 shrink-0" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition leading-snug break-words">{item.title}</p>
-                                  <p className="text-[10px] font-medium text-slate-500 truncate">{item.subtext}</p>
-                                </div>
+                              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                <Tag className="w-4 h-4 shrink-0" />
                               </div>
-                              <span className="text-[10px] font-bold text-amber-600 shrink-0 opacity-0 group-hover:opacity-100 transition hidden sm:inline-block">Explore →</span>
+                              <div className="flex-1 min-w-0 text-left">
+                                <p className="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition leading-snug line-clamp-2 text-left">{item.title}</p>
+                                <p className="text-[10px] font-medium text-slate-500 truncate text-left mt-0.5">{item.subtext}</p>
+                              </div>
+                              <span className="text-[10px] font-bold text-amber-600 shrink-0 opacity-0 group-hover:opacity-100 transition hidden sm:block ml-auto">Explore →</span>
                             </div>
                           ))}
                         </div>

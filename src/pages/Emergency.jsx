@@ -16,14 +16,13 @@ import {
   Stethoscope, 
   UserX, 
   Utensils, 
-  Heart,
   Share2
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { ALL_TN_DISTRICTS } from '../data/mockData';
 
-// Initial Seed Admin Emergencies if DB empty
+// Initial Seed Admin Emergencies if DB & LocalStorage empty
 const INITIAL_EMERGENCIES = [
   {
     id: 'emg-1',
@@ -58,10 +57,10 @@ const INITIAL_EMERGENCIES = [
 ];
 
 export default function Emergency() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user: authUser } = useAuth();
 
-  const [emergencies, setEmergencies] = useState(INITIAL_EMERGENCIES);
+  const [emergencies, setEmergencies] = useState([]);
   const [loadingAlerts, setLoadingAlerts] = useState(true);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState('all');
 
@@ -82,9 +81,31 @@ export default function Emergency() {
 
   useEffect(() => {
     fetchActiveEmergencies();
+
+    // Setup window focus listener to refresh when navigating back from admin panel
+    const onFocus = () => fetchActiveEmergencies();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   const fetchActiveEmergencies = async () => {
+    setLoadingAlerts(true);
+    let combinedAlerts = [];
+
+    // 1. Load from localStorage first if available (instant local state sync across tabs)
+    try {
+      const stored = localStorage.getItem('tn_ngo_admin_emergencies');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          combinedAlerts = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('LocalStorage admin_emergencies read warning:', e);
+    }
+
+    // 2. Query Supabase admin_emergencies table
     try {
       const { data, error } = await supabase
         .from('admin_emergencies')
@@ -93,15 +114,36 @@ export default function Emergency() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.warn('Supabase fetch active emergencies notice:', error.message);
+        console.error('[Emergency Page] Supabase admin_emergencies fetch error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
       } else if (data && data.length > 0) {
-        setEmergencies(data);
+        // Merge Supabase data with local alerts without duplicates
+        const dbIds = new Set(data.map(item => item.id));
+        const extraLocal = combinedAlerts.filter(item => !dbIds.has(item.id));
+        combinedAlerts = [...data, ...extraLocal];
       }
     } catch (err) {
-      console.error('Error fetching admin emergencies:', err);
-    } finally {
-      setLoadingAlerts(false);
+      console.error('[Emergency Page] Unexpected fetch error:', err);
     }
+
+    // 3. Fallback to INITIAL_EMERGENCIES if no alerts present anywhere
+    if (combinedAlerts.length === 0) {
+      combinedAlerts = INITIAL_EMERGENCIES;
+    }
+
+    // Filter active & non-expired (case insensitive status check)
+    const activeOnly = combinedAlerts.filter(emg => {
+      const isActive = String(emg.status || 'active').toLowerCase() === 'active';
+      const notExpired = !emg.expires_at || new Date(emg.expires_at) > new Date();
+      return isActive && notExpired;
+    });
+
+    setEmergencies(activeOnly);
+    setLoadingAlerts(false);
   };
 
   const handleReportSubmit = async (e) => {
@@ -126,7 +168,7 @@ export default function Emergency() {
         });
 
       if (dbErr) {
-        console.warn('Supabase report insert notice (local backup fallback):', dbErr.message);
+        console.warn('Supabase report insert notice:', dbErr.message);
       }
 
       setReportSuccessRef(refId);
@@ -143,15 +185,19 @@ export default function Emergency() {
     return activeCategoryFilter === 'all' || emg.emergency_type === activeCategoryFilter;
   });
 
-  // Sort by urgency: Critical -> High -> Medium
+  // Sort by urgency: Critical -> High -> Medium (case insensitive)
   const urgencyWeight = { critical: 3, high: 2, medium: 1 };
   const sortedEmergencies = [...filteredEmergencies].sort((a, b) => {
-    const wA = urgencyWeight[a.urgency_level] || 1;
-    const wB = urgencyWeight[b.urgency_level] || 1;
-    return wB - wA;
+    const levA = String(a.urgency_level || '').toLowerCase();
+    const levB = String(b.urgency_level || '').toLowerCase();
+    const wA = urgencyWeight[levA] || 1;
+    const wB = urgencyWeight[levB] || 1;
+    if (wB !== wA) return wB - wA;
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
   });
 
-  const getUrgencyBadge = (level) => {
+  const getUrgencyBadge = (levelRaw) => {
+    const level = String(levelRaw || '').toLowerCase();
     if (level === 'critical') {
       return (
         <span className="px-3 py-1 rounded-full text-[11px] font-black bg-rose-600 text-white shadow-md shadow-rose-600/30 flex items-center gap-1 animate-pulse">
@@ -252,15 +298,28 @@ export default function Emergency() {
 
       {/* Emergency Cards Grid */}
       <div className="space-y-4">
-        <h2 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2 px-1">
-          <AlertTriangle className="w-5 h-5 text-rose-600" />
-          <span>{t('emergency.activeAlerts')}</span>
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-200">
-            {sortedEmergencies.length}
-          </span>
-        </h2>
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-rose-600" />
+            <span>{t('emergency.activeAlerts')}</span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-200">
+              {sortedEmergencies.length}
+            </span>
+          </h2>
 
-        {sortedEmergencies.length === 0 ? (
+          <button
+            onClick={fetchActiveEmergencies}
+            className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <span>Refresh Alerts</span>
+          </button>
+        </div>
+
+        {loadingAlerts ? (
+          <div className="bg-white rounded-3xl p-8 text-center border border-slate-200/80 shadow-sm text-xs font-semibold text-slate-500">
+            Checking live state emergency channels...
+          </div>
+        ) : sortedEmergencies.length === 0 ? (
           <div className="bg-white rounded-3xl p-12 text-center border border-slate-200/80 shadow-sm space-y-2">
             <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
             <h3 className="text-base font-bold text-slate-800">{t('emergency.noAlerts')}</h3>
@@ -306,7 +365,7 @@ export default function Emergency() {
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
                   <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
-                    {new Date(emg.created_at).toLocaleDateString()}
+                    {new Date(emg.created_at || Date.now()).toLocaleDateString()}
                   </span>
 
                   <div className="flex items-center gap-2">

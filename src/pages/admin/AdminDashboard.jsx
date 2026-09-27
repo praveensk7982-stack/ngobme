@@ -230,25 +230,58 @@ export default function AdminDashboard() {
       description: emergencyForm.description,
       emergency_type: emergencyForm.emergency_type,
       district: emergencyForm.district,
-      urgency_level: emergencyForm.urgency_level,
+      urgency_level: (emergencyForm.urgency_level || 'high').toLowerCase(),
       status: 'active',
       created_at: new Date().toISOString(),
       expires_at: emergencyForm.expires_at || null
     };
 
-    setAdminEmergencies([newAlert, ...adminEmergencies]);
+    const updated = [newAlert, ...adminEmergencies];
+    setAdminEmergencies(updated);
+    try {
+      localStorage.setItem('tn_ngo_admin_emergencies', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('LocalStorage write warning:', e);
+    }
+
     setShowEmergencyForm(false);
     setEmergencyForm({ title: '', description: '', emergency_type: 'blood_needed', district: 'Chennai', urgency_level: 'high', expires_at: '' });
 
     try {
-      await supabase.from('admin_emergencies').insert(newAlert);
+      const { error } = await supabase.from('admin_emergencies').insert(newAlert);
+      if (error) {
+        console.error('[AdminDashboard] Supabase admin_emergencies insert error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+      }
     } catch (err) {
       console.warn('Supabase emergency insert fallback:', err);
     }
   };
 
-  const handleToggleEmergencyStatus = (id) => {
-    setAdminEmergencies(adminEmergencies.map(e => e.id === id ? { ...e, status: e.status === 'active' ? 'resolved' : 'active' } : e));
+  const handleToggleEmergencyStatus = async (id) => {
+    const updated = adminEmergencies.map(e => e.id === id ? { ...e, status: e.status === 'active' ? 'resolved' : 'active' } : e);
+    setAdminEmergencies(updated);
+    try {
+      localStorage.setItem('tn_ngo_admin_emergencies', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('LocalStorage write warning:', e);
+    }
+
+    const target = updated.find(e => e.id === id);
+    if (target) {
+      try {
+        const { error } = await supabase.from('admin_emergencies').update({ status: target.status }).eq('id', id);
+        if (error) {
+          console.error('[AdminDashboard] Supabase status update error:', error.message);
+        }
+      } catch (err) {
+        console.warn('Supabase emergency status update fallback:', err);
+      }
+    }
   };
 
   const handleUserReportStatusChange = (id, newStatus) => {

@@ -31,6 +31,7 @@ const INITIAL_EMERGENCIES = [
     emergency_type: 'blood_needed',
     district: 'Madurai',
     urgency_level: 'critical',
+    contact_phone: '9342637020',
     status: 'active',
     created_at: new Date(Date.now() - 30 * 60000).toISOString()
   },
@@ -41,6 +42,7 @@ const INITIAL_EMERGENCIES = [
     emergency_type: 'disaster_relief',
     district: 'Cuddalore',
     urgency_level: 'high',
+    contact_phone: '9444088776',
     status: 'active',
     created_at: new Date(Date.now() - 3 * 3600000).toISOString()
   },
@@ -51,6 +53,7 @@ const INITIAL_EMERGENCIES = [
     emergency_type: 'missing_person',
     district: 'Chennai',
     urgency_level: 'medium',
+    contact_phone: '9840112233',
     status: 'active',
     created_at: new Date(Date.now() - 12 * 3600000).toISOString()
   }
@@ -362,19 +365,27 @@ export default function Emergency() {
                 </div>
 
                 {/* Footer Action Bar */}
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                   <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
                     {new Date(emg.created_at || Date.now()).toLocaleDateString()}
                   </span>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={`tel:+91${emg.contact_phone?.replace(/\D/g, '') || '9342637020'}`}
+                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-white animate-bounce" />
+                      <span>{t('emergency.callNow', 'Call Now')} (+91 {emg.contact_phone || '9342637020'})</span>
+                    </a>
+
                     <a
                       href={`tel:108`}
                       className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition flex items-center gap-1.5"
                     >
                       <Phone className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Helpline 108</span>
+                      <span>108</span>
                     </a>
 
                     <button
@@ -382,11 +393,11 @@ export default function Emergency() {
                         if (navigator.share) {
                           navigator.share({
                             title: emg.title,
-                            text: emg.description,
+                            text: `${emg.title} - ${emg.description} Contact: +91 ${emg.contact_phone || '9342637020'}`,
                             url: window.location.href
                           });
                         } else {
-                          navigator.clipboard.writeText(`${emg.title} - ${emg.description}`);
+                          navigator.clipboard.writeText(`${emg.title} - ${emg.description} Contact: +91 ${emg.contact_phone || '9342637020'}`);
                           alert('Emergency alert copied to clipboard!');
                         }
                       }}

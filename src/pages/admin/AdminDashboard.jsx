@@ -62,6 +62,7 @@ export default function AdminDashboard() {
       emergency_type: 'blood_needed',
       district: 'Madurai',
       urgency_level: 'critical',
+      contact_phone: '9342637020',
       status: 'active',
       created_at: new Date().toISOString()
     }
@@ -73,6 +74,7 @@ export default function AdminDashboard() {
     emergency_type: 'blood_needed',
     district: 'Chennai',
     urgency_level: 'high',
+    contact_phone: '',
     expires_at: ''
   });
 
@@ -231,6 +233,7 @@ export default function AdminDashboard() {
       emergency_type: emergencyForm.emergency_type,
       district: emergencyForm.district,
       urgency_level: (emergencyForm.urgency_level || 'high').toLowerCase(),
+      contact_phone: emergencyForm.contact_phone || '9342637020',
       status: 'active',
       created_at: new Date().toISOString(),
       expires_at: emergencyForm.expires_at || null
@@ -245,7 +248,7 @@ export default function AdminDashboard() {
     }
 
     setShowEmergencyForm(false);
-    setEmergencyForm({ title: '', description: '', emergency_type: 'blood_needed', district: 'Chennai', urgency_level: 'high', expires_at: '' });
+    setEmergencyForm({ title: '', description: '', emergency_type: 'blood_needed', district: 'Chennai', urgency_level: 'high', contact_phone: '', expires_at: '' });
 
     try {
       const { error } = await supabase.from('admin_emergencies').insert(newAlert);
@@ -295,6 +298,7 @@ export default function AdminDashboard() {
       emergency_type: report.emergency_type,
       district: report.district,
       urgency_level: 'high',
+      contact_phone: report.mobile_number || '',
       expires_at: ''
     });
     setActiveTab('emergency_alerts');
@@ -503,6 +507,7 @@ export default function AdminDashboard() {
                     </div>
                     <h4 className="text-sm font-bold text-slate-900">{emg.title}</h4>
                     <p className="text-xs text-slate-600 font-medium mt-0.5">{emg.description}</p>
+                    <p className="text-xs font-bold text-rose-700 mt-1">📞 Contact: +91 {emg.contact_phone || '9342637020'}</p>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -722,11 +727,29 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div>
-                <label className="block mb-1 text-slate-700 font-bold">District Location *</label>
-                <select value={emergencyForm.district} onChange={(e) => setEmergencyForm({...emergencyForm, district: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300">
-                  {ALL_TN_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-700 font-bold">District Location *</label>
+                  <select value={emergencyForm.district} onChange={(e) => setEmergencyForm({...emergencyForm, district: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300">
+                    {ALL_TN_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-slate-700 font-bold">Contact Phone Number *</label>
+                  <div className="flex items-center">
+                    <span className="px-3 py-2.5 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-slate-600 font-bold text-xs">+91</span>
+                    <input
+                      required
+                      type="tel"
+                      maxLength={10}
+                      value={emergencyForm.contact_phone}
+                      onChange={(e) => setEmergencyForm({...emergencyForm, contact_phone: e.target.value.replace(/\D/g, '').slice(0, 10)})}
+                      placeholder="9876543210"
+                      className="w-full p-2.5 rounded-r-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:border-rose-600"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>

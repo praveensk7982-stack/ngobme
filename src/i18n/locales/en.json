@@ -197,6 +197,8 @@
     "activeAlerts": "Active Public Emergency Alerts",
     "noAlerts": "No active emergency alerts at this time.",
     "filterAll": "All Alerts",
+    "contactPhone": "Contact Phone Number *",
+    "callNow": "Call Now",
     "reporterName": "Reporter Name *",
     "mobileNumber": "Mobile Contact Number *",
     "emergencyType": "Emergency Category *",

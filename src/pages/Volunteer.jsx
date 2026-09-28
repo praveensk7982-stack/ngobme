@@ -58,11 +58,26 @@ export default function Volunteer() {
     phone: authUser?.phone || '9444088776',
     district: authUser?.district || 'Chennai',
     availability: 'Weekends (Sat & Sun)',
-    interests: ['Medical & Health', 'Blood Donation'],
-    bloodGroup: 'O+'
+    interests: ['Medical & Health'],
+    bloodGroup: ''
   });
 
   const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+  const isBloodOpportunity = (op) => {
+    if (!op) return false;
+    const title = (op.title || '').toLowerCase();
+    const cat = (op.category || op.category_tag || '').toLowerCase();
+    const bloodNeeded = (op.blood_groups_needed || '').trim();
+    const desc = (op.description || '').toLowerCase();
+
+    return title.includes('blood') ||
+           cat.includes('blood') ||
+           Boolean(bloodNeeded) ||
+           desc.includes('blood');
+  };
+
+  const isBloodRelevant = formData.interests.includes('Blood Donation') || isBloodOpportunity(selectedOpening);
 
   // Load user's existing applications and openings on mount
   useEffect(() => {
@@ -193,9 +208,9 @@ export default function Volunteer() {
     e.preventDefault();
     setError('');
 
-    // Validation: If Blood Donation is checked, bloodGroup is required
-    if (formData.interests.includes('Blood Donation') && !formData.bloodGroup) {
-      setError('Please select your blood group for blood donation registration.');
+    // Validation: Required only when Blood Group section is visible
+    if (isBloodRelevant && !formData.bloodGroup) {
+      setError('Please select your blood group for emergency blood matching.');
       return;
     }
 
@@ -203,6 +218,8 @@ export default function Volunteer() {
       const appliedForText = selectedOpening 
         ? `${selectedOpening.title} by ${selectedOpening.ngo}`
         : null;
+
+      const bloodGroupPayload = isBloodRelevant ? (formData.bloodGroup || null) : null;
 
       // Save volunteer application profile to Supabase volunteers table
       const { error: dbError } = await supabase
@@ -215,7 +232,7 @@ export default function Volunteer() {
           district: formData.district,
           availability: formData.availability,
           interests: formData.interests,
-          blood_group: formData.interests.includes('Blood Donation') ? formData.bloodGroup : null,
+          blood_group: bloodGroupPayload,
           applied_for: appliedForText,
           opening_id: selectedOpening ? String(selectedOpening.id) : null,
           created_at: new Date().toISOString()
@@ -236,7 +253,7 @@ export default function Volunteer() {
             mobile_number: formData.phone,
             email: formData.email,
             place: `${formData.district}, Tamil Nadu`,
-            blood_group: formData.interests.includes('Blood Donation') ? formData.bloodGroup : null,
+            blood_group: bloodGroupPayload,
             status: 'pending',
             applied_at: new Date().toISOString()
           });
@@ -433,8 +450,8 @@ export default function Volunteer() {
               </div>
             </div>
 
-            {/* CONDITIONAL BLOOD GROUP FIELD (Only shown when "Blood Donation" is checked) */}
-            {formData.interests.includes('Blood Donation') && (
+            {/* CONDITIONAL BLOOD GROUP FIELD (Only shown when relevant: Blood Donation checked OR blood opportunity selected) */}
+            {isBloodRelevant && (
               <div className="p-4 rounded-2xl bg-rose-50/90 border border-rose-200 animate-in fade-in space-y-1.5">
                 <label className="text-rose-950 font-extrabold block text-xs flex items-center gap-1.5">
                   <Droplet className="w-4 h-4 text-rose-600 shrink-0" />
@@ -444,12 +461,12 @@ export default function Volunteer() {
                   Used to notify you for urgent blood donation requests in your district.
                 </p>
                 <select
-                  required
-                  value={formData.bloodGroup}
+                  required={isBloodRelevant}
+                  value={formData.bloodGroup || ''}
                   onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-rose-300 focus:border-rose-600 focus:outline-none bg-white text-slate-800 font-bold text-xs cursor-pointer"
                 >
-                  <option value="">Select your Blood Group...</option>
+                  <option value="" disabled>Choose Blood Group</option>
                   {bloodGroupOptions.map(bg => (
                     <option key={bg} value={bg}>{bg}</option>
                   ))}

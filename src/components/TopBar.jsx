@@ -18,11 +18,13 @@ import {
   Tag,
   X,
   AlertCircle,
-  ShieldCheck
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
 import { INITIAL_NOTIFICATIONS, getCombinedSearchData } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import AIAssistantModal from './AIAssistantModal';
 
 import { useVoiceSearch } from '../utils/useVoiceSearch';
 
@@ -317,65 +319,22 @@ export default function TopBar({
             </button>
           )}
 
-          {/* Notification Bell Dropdown */}
+          {/* AI Assistant Button (Replaces Notification Bell) */}
           <div className="relative shrink-0">
             <button
-              onClick={() => {
-                setShowNotifications(!showNotifications);
-                setShowUserMenu(false);
-              }}
-              className="relative p-2 rounded-xl text-slate-600 hover:text-blue-700 hover:bg-slate-100 transition"
-              aria-label="View notifications"
+              onClick={() => setShowAIAssistant(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-bold text-xs shadow-md shadow-blue-600/20 border border-blue-400/30 transition active:scale-95 cursor-pointer"
+              aria-label="Open AI Assistant"
             >
-              <Bell className="w-5 h-5" />
-              {unreadNotificationsCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white animate-pulse">
-                  {unreadNotificationsCount}
-                </span>
-              )}
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+              <span className="hidden sm:inline">Ask AI</span>
             </button>
-
-            {/* Notification Menu Card */}
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-90 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="flex items-center justify-between px-4 pb-2 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-bold text-slate-800">{t('common.notifications')}</h3>
-                    <span className="px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold">
-                      {unreadNotificationsCount} New
-                    </span>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      if (onClearNotifications) onClearNotifications();
-                    }}
-                    className="text-[11px] font-semibold text-blue-600 hover:underline"
-                  >
-                    Mark all read
-                  </button>
-                </div>
-
-                <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 custom-scrollbar">
-                  {INITIAL_NOTIFICATIONS.map((notif) => (
-                    <div 
-                      key={notif.id} 
-                      onClick={() => {
-                        setShowNotifications(false);
-                        navigate('/notifications');
-                      }}
-                      className="p-3 hover:bg-slate-50 transition cursor-pointer flex gap-2.5"
-                    >
-                      <div className={`w-2 h-2 rounded-full ${notif.unread && unreadNotificationsCount > 0 ? 'bg-blue-600' : 'bg-slate-300'} mt-1.5 shrink-0`} />
-                      <div>
-                        <p className="text-xs font-medium text-slate-700 leading-snug">{notif.text}</p>
-                        <span className="text-[10px] font-semibold text-slate-400 mt-1 inline-block">{notif.time}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
+
+          <AIAssistantModal 
+            isOpen={showAIAssistant} 
+            onClose={() => setShowAIAssistant(false)} 
+          />
 
           <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 

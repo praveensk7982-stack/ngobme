@@ -11,21 +11,43 @@ import {
   HeartHandshake, 
   Droplet,
   AlertCircle,
-  X
+  X,
+  PlusCircle,
+  Building2
 } from 'lucide-react';
 import { ALL_TN_DISTRICTS, VOLUNTEER_OPPORTUNITIES } from '../data/mockData';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { 
+  getVolunteerOpenings, 
+  saveVolunteerOpening, 
+  updateVolunteerOpeningStatus 
+} from '../lib/volunteerOpenings';
 
 export default function Volunteer() {
   const { t } = useTranslation();
-  const { user: authUser } = useAuth();
+  const { user: authUser, role } = useAuth();
+
+  const isVerifiedNGO = authUser && (role === 'ngo' || role === 'admin' || authUser.is_ngo || authUser.email?.toLowerCase().includes('ngo'));
 
   const formRef = useRef(null);
   const [submitted, setSubmitted] = useState(false);
   const [appliedOps, setAppliedOps] = useState([]);
   const [error, setError] = useState('');
   const [isHighlighted, setIsHighlighted] = useState(false);
+
+  // Dynamic Openings State
+  const [openingsList, setOpeningsList] = useState([]);
+  const [showNgoPostModal, setShowNgoPostModal] = useState(false);
+  const [postSuccessBanner, setPostSuccessBanner] = useState(false);
+  const [ngoForm, setNgoForm] = useState({
+    title: '',
+    district: authUser?.district || 'Chennai',
+    category_tag: 'High Impact',
+    time_commitment: '4 hrs/week',
+    blood_groups_needed: '',
+    description: ''
+  });
 
   // Selected Opening State for Apply Now
   const [selectedOpening, setSelectedOpening] = useState(null);
@@ -42,10 +64,53 @@ export default function Volunteer() {
 
   const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-  // Load user's existing applications on mount
+  // Load user's existing applications and openings on mount
   useEffect(() => {
     fetchUserApplications();
+    loadOpenings();
   }, [authUser]);
+
+  const loadOpenings = async () => {
+    const list = await getVolunteerOpenings();
+    setOpeningsList(list);
+  };
+
+  const handleNgoPostSubmit = async (e) => {
+    e.preventDefault();
+    const newOp = {
+      id: `op-${Date.now()}`,
+      title: ngoForm.title,
+      ngo_id: authUser?.uid || 'ngo-1',
+      ngo_name: authUser?.name || 'Aram Seiya Virumbhu Foundation',
+      district: ngoForm.district,
+      category_tag: ngoForm.category_tag,
+      time_commitment: ngoForm.time_commitment,
+      blood_groups_needed: ngoForm.blood_groups_needed || '',
+      description: ngoForm.description || '',
+      status: 'pending',
+      created_at: new Date().toISOString()
+    };
+
+    const updated = await saveVolunteerOpening(newOp);
+    setOpeningsList(updated);
+    setShowNgoPostModal(false);
+    setPostSuccessBanner(true);
+    setNgoForm({
+      title: '',
+      district: authUser?.district || 'Chennai',
+      category_tag: 'High Impact',
+      time_commitment: '4 hrs/week',
+      blood_groups_needed: '',
+      description: ''
+    });
+
+    setTimeout(() => setPostSuccessBanner(false), 6000);
+  };
+
+  const handleNgoCloseOpening = async (id) => {
+    const updated = await updateVolunteerOpeningStatus(id, 'closed');
+    setOpeningsList(updated);
+  };
 
   const fetchUserApplications = async () => {
     try {
@@ -405,6 +470,70 @@ export default function Volunteer() {
 
         {/* Right Opportunities Column */}
         <div className="lg:col-span-5 space-y-4">
+          
+          {/* VERIFIED NGO CONTROLS */}
+          {isVerifiedNGO && (
+            <div className="bg-gradient-to-r from-blue-900 to-[#0f1e3d] text-white rounded-3xl p-6 shadow-md border border-blue-800 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-amber-400" />
+                  <span className="font-extrabold text-sm">Verified NGO Partner Console</span>
+                </div>
+                <button
+                  onClick={() => setShowNgoPostModal(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-md transition flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Post Opening</span>
+                </button>
+              </div>
+
+              {postSuccessBanner && (
+                <div className="p-3 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-bold text-xs animate-in fade-in">
+                  ✓ Opening submitted for admin approval!
+                </div>
+              )}
+
+              {/* NGO's Own Openings List */}
+              {openingsList.filter(o => o.ngo_id === authUser?.uid || o.ngo_name === authUser?.name || o.ngo_name?.includes('Aram')).length > 0 && (
+                <div className="pt-2 border-t border-blue-800/60 space-y-2">
+                  <h4 className="text-xs font-extrabold text-blue-200">My Openings Status</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                    {openingsList.filter(o => o.ngo_id === authUser?.uid || o.ngo_name === authUser?.name || o.ngo_name?.includes('Aram')).map((myOp) => (
+                      <div key={myOp.id} className="p-3 rounded-xl bg-blue-950/60 border border-blue-700/50 flex items-center justify-between gap-2 text-xs">
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                              myOp.status === 'pending' ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30' :
+                              myOp.status === 'active' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' :
+                              myOp.status === 'rejected' ? 'bg-rose-500/20 text-rose-300 border border-rose-400/30' : 'bg-slate-700 text-slate-300'
+                            }`}>
+                              {myOp.status}
+                            </span>
+                          </div>
+                          <p className="font-bold text-white text-xs">{myOp.title}</p>
+                          {myOp.rejection_reason && (
+                            <p className="text-[10px] text-rose-300 font-semibold mt-0.5">Reason: {myOp.rejection_reason}</p>
+                          )}
+                        </div>
+
+                        {myOp.status === 'active' && (
+                          <button
+                            onClick={() => handleNgoCloseOpening(myOp.id)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[10px]"
+                          >
+                            Close
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* PUBLIC ACTIVE VOLUNTEER OPENINGS LIST */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
             <h2 className="text-base font-extrabold text-slate-900 mb-1 flex items-center gap-2">
               <Award className="w-5 h-5 text-amber-500" />
@@ -413,58 +542,134 @@ export default function Volunteer() {
             <p className="text-xs text-slate-500 font-medium mb-4">Direct recruitment by verified non-profits</p>
 
             <div className="space-y-3">
-              {VOLUNTEER_OPPORTUNITIES.map((op) => {
-                const isApplied = appliedOps.includes(String(op.id));
-                const neededBgs = op.neededBloodGroups || (op.category === 'Blood Donation' ? ['O+', 'O-', 'AB-'] : null);
+              {openingsList.filter(o => o.status === 'active').length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  <Users className="w-10 h-10 mx-auto mb-2 text-slate-400 opacity-60" />
+                  <p className="font-bold text-sm">No active volunteer openings currently available</p>
+                  <p className="text-xs text-slate-400">Check back soon for new drives.</p>
+                </div>
+              ) : (
+                openingsList.filter(o => o.status === 'active').map((op) => {
+                  const isApplied = appliedOps.includes(String(op.id));
+                  const badgeColor = op.category_tag === 'Urgent Need' ? 'bg-rose-100 text-rose-800 border-rose-200' :
+                                    op.category_tag === 'Outdoor' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                                    op.category_tag === 'Community' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                                    'bg-blue-100 text-blue-800 border-blue-200';
 
-                return (
-                  <div key={op.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                    
-                    {/* Badges Row */}
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${op.badgeColor}`}>
-                          {op.badge}
-                        </span>
+                  const bloodGroupsList = op.blood_groups_needed ? op.blood_groups_needed.split(',').map(b => b.trim()) : null;
 
-                        {/* Needed Blood Group Badge for blood emergency openings */}
-                        {neededBgs && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1">
-                            <Droplet className="w-3 h-3 text-rose-600" /> Needs: {neededBgs.join(', ')}
+                  return (
+                    <div key={op.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                      
+                      {/* Badges Row */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}`}>
+                            {op.category_tag || 'Volunteer'}
                           </span>
-                        )}
+
+                          {bloodGroupsList && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1">
+                              <Droplet className="w-3 h-3 text-rose-600" /> Needs: {bloodGroupsList.join(', ')}
+                            </span>
+                          )}
+                        </div>
+
+                        <span className="text-[10px] text-slate-500 font-semibold">{op.district}</span>
                       </div>
 
-                      <span className="text-[10px] text-slate-500 font-semibold">{op.district}</span>
-                    </div>
+                      <h3 className="text-xs font-bold text-slate-900 leading-snug">{op.title}</h3>
+                      <p className="text-[11px] text-slate-600 font-medium">by <span className="font-semibold text-slate-800">{op.ngo_name || op.ngo}</span></p>
 
-                    <h3 className="text-xs font-bold text-slate-900 leading-snug">{op.title}</h3>
-                    <p className="text-[11px] text-slate-600 font-medium">by <span className="font-semibold text-slate-800">{op.ngo}</span></p>
-
-                    <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 pt-2 border-t border-slate-200/60">
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-blue-600" /> {op.commitment}</span>
-                      
-                      {isApplied ? (
-                        <span className="text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> {t('volunteer.alreadyApplied', 'Applied ✓')}
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleApplyNowClick(op)}
-                          className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 cursor-pointer active:scale-95"
-                        >
-                          <span>{t('volunteer.applyNow', 'Apply Now →')}</span>
-                        </button>
-                      )}
+                      <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 pt-2 border-t border-slate-200/60">
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-blue-600" /> {op.time_commitment || op.commitment}</span>
+                        
+                        {isApplied ? (
+                          <span className="text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> {t('volunteer.alreadyApplied', 'Applied ✓')}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleApplyNowClick({
+                              ...op,
+                              ngo: op.ngo_name || op.ngo,
+                              category: op.category_tag
+                            })}
+                            className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 cursor-pointer active:scale-95"
+                          >
+                            <span>{t('volunteer.applyNow', 'Apply Now')}</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
 
       </div>
+
+      {/* VERIFIED NGO POST OPENING MODAL */}
+      {showNgoPostModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-5 bg-[#0f1e3d] text-white relative">
+              <button onClick={() => setShowNgoPostModal(false)} className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 text-white"><X className="w-5 h-5" /></button>
+              <span className="text-[10px] uppercase tracking-wider font-extrabold text-amber-300">Verified NGO recruitment</span>
+              <h2 className="text-base font-black">Post New Volunteer Opening</h2>
+            </div>
+
+            <form onSubmit={handleNgoPostSubmit} className="p-6 overflow-y-auto space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Opening Title *</label>
+                <input required type="text" value={ngoForm.title} onChange={(e) => setNgoForm({...ngoForm, title: e.target.value})} placeholder="e.g. Weekend Teaching Volunteer" className="w-full p-2.5 rounded-xl border border-slate-300" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-700 font-bold">District *</label>
+                  <select value={ngoForm.district} onChange={(e) => setNgoForm({...ngoForm, district: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300">
+                    {ALL_TN_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-slate-700 font-bold">Category Tag *</label>
+                  <select value={ngoForm.category_tag} onChange={(e) => setNgoForm({...ngoForm, category_tag: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300">
+                    <option value="Urgent Need">Urgent Need</option>
+                    <option value="High Impact">High Impact</option>
+                    <option value="Outdoor">Outdoor</option>
+                    <option value="Community">Community</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-700 font-bold">Time Commitment *</label>
+                  <input required type="text" value={ngoForm.time_commitment} onChange={(e) => setNgoForm({...ngoForm, time_commitment: e.target.value})} placeholder="e.g. 4 hrs/week (Saturdays)" className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-slate-700 font-bold">Blood Groups Needed (Optional)</label>
+                  <input type="text" value={ngoForm.blood_groups_needed} onChange={(e) => setNgoForm({...ngoForm, blood_groups_needed: e.target.value})} placeholder="e.g. O+, O-, AB-" className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Role Description (Optional)</label>
+                <textarea rows="3" value={ngoForm.description} onChange={(e) => setNgoForm({...ngoForm, description: e.target.value})} placeholder="Describe volunteer tasks and requirements..." className="w-full p-2.5 rounded-xl border border-slate-300 resize-none" />
+              </div>
+
+              <button type="submit" className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md">
+                Submit Opening for Admin Approval
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

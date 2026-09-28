@@ -19,15 +19,165 @@ import {
   MapPin, 
   X,
   FileText,
-  UserCheck
+  UserCheck,
+  Search
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useSearchParams } from 'react-router-dom';
 import { FEATURED_NGOS, UPCOMING_EVENTS, ALL_TN_DISTRICTS } from '../../data/mockData';
+import { 
+  getVolunteerOpenings, 
+  saveVolunteerOpening, 
+  updateVolunteerOpeningStatus, 
+  deleteVolunteerOpening, 
+  sendInAppNotification 
+} from '../../lib/volunteerOpenings';
 
 export default function AdminDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
+
+  // Volunteer Openings Admin State
+  const [adminOpenings, setAdminOpenings] = useState([]);
+  const [adminOpeningFilter, setAdminOpeningFilter] = useState('pending'); // 'pending' | 'active' | 'rejected' | 'closed'
+  const [showRejectModal, setShowRejectModal] = useState(null); // opening object or null
+  const [rejectionReasonInput, setRejectionReasonInput] = useState('');
+  const [showAdminPostOpeningModal, setShowAdminPostOpeningModal] = useState(false);
+  const [adminOpeningForm, setAdminOpeningForm] = useState({
+    title: '',
+    ngo_name: 'State Secretariat / Govt Partner',
+    district: 'Chennai',
+    category_tag: 'High Impact',
+    time_commitment: '4 hrs/week',
+    blood_groups_needed: '',
+    description: ''
+  });
+
+  useEffect(() => {
+    loadAdminOpenings();
+  }, []);
+
+  const loadAdminOpenings = async () => {
+    const list = await getVolunteerOpenings();
+    setAdminOpenings(list);
+  };
+
+  const handleApproveOpening = async (op) => {
+    const updated = await updateVolunteerOpeningStatus(op.id, 'active');
+    setAdminOpenings(updated);
+
+    await sendInAppNotification({
+      id: `notif-${Date.now()}`,
+      title: 'Volunteer Opening Approved! 🎉',
+      message: `Your volunteer opening "${op.title}" has been approved by Secretariat Admin and is now live on TN NGO Connect.`,
+      type: 'approval',
+      target_ngo_id: op.ngo_id || 'ngo-1',
+      unread: true,
+      created_at: new Date().toISOString()
+    });
+  };
+
+  const handleRejectOpeningSubmit = async (e) => {
+    e.preventDefault();
+    if (!showRejectModal) return;
+    const op = showRejectModal;
+    const reason = rejectionReasonInput.trim() || 'Did not meet government verification guidelines.';
+
+    const updated = await updateVolunteerOpeningStatus(op.id, 'rejected', reason);
+    setAdminOpenings(updated);
+    setShowRejectModal(null);
+    setRejectionReasonInput('');
+
+    await sendInAppNotification({
+      id: `notif-${Date.now()}`,
+      title: 'Volunteer Opening Not Approved',
+      message: `Your volunteer opening "${op.title}" was not approved. Reason: ${reason}`,
+      type: 'rejection',
+      target_ngo_id: op.ngo_id || 'ngo-1',
+      unread: true,
+      created_at: new Date().toISOString()
+    });
+  };
+
+  const handleCloseOpening = async (id) => {
+    const updated = await updateVolunteerOpeningStatus(id, 'closed');
+    setAdminOpenings(updated);
+  };
+
+  const handleDeleteOpeningAction = async (id) => {
+    if (confirm('Are you sure you want to delete this opening?')) {
+      const updated = await deleteVolunteerOpening(id);
+      setAdminOpenings(updated);
+    }
+  };
+
+  const handleAdminCreateOpening = async (e) => {
+    e.preventDefault();
+    const newOpening = {
+      id: `op-${Date.now()}`,
+      title: adminOpeningForm.title,
+      ngo_id: 'admin-secretariat',
+      ngo_name: adminOpeningForm.ngo_name,
+      district: adminOpeningForm.district,
+      category_tag: adminOpeningForm.category_tag,
+      time_commitment: adminOpeningForm.time_commitment,
+      blood_groups_needed: adminOpeningForm.blood_groups_needed || '',
+      description: adminOpeningForm.description || '',
+      status: 'active',
+      created_at: new Date().toISOString(),
+      approved_at: new Date().toISOString()
+    };
+
+    const updated = await saveVolunteerOpening(newOpening);
+    setAdminOpenings(updated);
+    setShowAdminPostOpeningModal(false);
+    setAdminOpeningForm({
+      title: '',
+      ngo_name: 'State Secretariat / Govt Partner',
+      district: 'Chennai',
+      category_tag: 'High Impact',
+      time_commitment: '4 hrs/week',
+      blood_groups_needed: '',
+      description: ''
+    });
+  };
+
+  // Stat Card Modal & Searchable NGO State
+  const [activeStatModal, setActiveStatModal] = useState(null); // 'camps' | 'alerts' | 'reports' | 'ngos'
+  const [ngoSearchQuery, setNgoSearchQuery] = useState('');
+  const [ngoCurrentPage, setNgoCurrentPage] = useState(1);
+  const ngoItemsPerPage = 10;
+
+  const ALL_VERIFIED_NGOS = [
+    ...FEATURED_NGOS,
+    ...ALL_TN_DISTRICTS.map((dist, idx) => ({
+      id: `ngo-gen-${idx}`,
+      name: `${dist} Social Welfare & Development Trust`,
+      category: idx % 4 === 0 ? 'Medical & Health' : idx % 4 === 1 ? 'Education' : idx % 4 === 2 ? 'Environment' : 'Elderly Care',
+      district: dist,
+      regNo: `TN/${2018 + (idx % 8)}/${String(1000 + idx * 7).padStart(5, '0')}`,
+      verified: true,
+      established: `${2008 + (idx % 15)}`,
+      volunteers: `${120 + idx * 12}+ Volunteers`
+    }))
+  ];
+
+  const filteredVerifiedNGOs = ALL_VERIFIED_NGOS.filter(ngo => {
+    const query = ngoSearchQuery.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      ngo.name.toLowerCase().includes(query) ||
+      ngo.district.toLowerCase().includes(query) ||
+      ngo.category.toLowerCase().includes(query) ||
+      (ngo.regNo && ngo.regNo.toLowerCase().includes(query))
+    );
+  });
+
+  const totalNgoPages = Math.max(1, Math.ceil(filteredVerifiedNGOs.length / ngoItemsPerPage));
+  const paginatedNGOs = filteredVerifiedNGOs.slice(
+    (ngoCurrentPage - 1) * ngoItemsPerPage,
+    ngoCurrentPage * ngoItemsPerPage
+  );
 
   // Camps Management State
   const [campsList, setCampsList] = useState(UPCOMING_EVENTS);
@@ -342,40 +492,76 @@ export default function AdminDashboard() {
           {/* Admin Stat Cards Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
-            <div className="p-5 rounded-2xl bg-purple-50/80 border border-purple-200 text-purple-950 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-extrabold text-purple-800 uppercase tracking-wider">Camps Managed</span>
-                <Calendar className="w-5 h-5 text-purple-600" />
+            <div 
+              onClick={() => setActiveStatModal('camps')}
+              className="p-5 rounded-2xl bg-purple-50/80 hover:bg-purple-100/80 border border-purple-200 text-purple-950 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-extrabold text-purple-800 uppercase tracking-wider">Camps Managed</span>
+                  <Calendar className="w-5 h-5 text-purple-600 group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="text-2xl font-extrabold">{campsList.length} Active Camps</h3>
+                <p className="text-[11px] font-semibold text-purple-700 mt-1">Admin creation & attendee roster live</p>
               </div>
-              <h3 className="text-2xl font-extrabold">{campsList.length} Active Camps</h3>
-              <p className="text-[11px] font-semibold text-purple-700 mt-1">Admin creation & attendee roster live</p>
+              <div className="mt-4 pt-2.5 border-t border-purple-200/70 flex items-center justify-between text-[11px] font-bold text-purple-800 group-hover:text-purple-950">
+                <span>View details</span>
+                <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-rose-50/80 border border-rose-200 text-rose-950 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-extrabold text-rose-800 uppercase tracking-wider">Active State Alerts</span>
-                <Siren className="w-5 h-5 text-rose-600 animate-pulse" />
+            <div 
+              onClick={() => setActiveStatModal('alerts')}
+              className="p-5 rounded-2xl bg-rose-50/80 hover:bg-rose-100/80 border border-rose-200 text-rose-950 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-extrabold text-rose-800 uppercase tracking-wider">Active State Alerts</span>
+                  <Siren className="w-5 h-5 text-rose-600 animate-pulse group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="text-2xl font-extrabold">{adminEmergencies.filter(e => e.status === 'active').length} Public Alerts</h3>
+                <p className="text-[11px] font-semibold text-rose-700 mt-1">Broadcasting to all 38 districts</p>
               </div>
-              <h3 className="text-2xl font-extrabold">{adminEmergencies.filter(e => e.status === 'active').length} Public Alerts</h3>
-              <p className="text-[11px] font-semibold text-rose-700 mt-1">Broadcasting to all 38 districts</p>
+              <div className="mt-4 pt-2.5 border-t border-rose-200/70 flex items-center justify-between text-[11px] font-bold text-rose-800 group-hover:text-rose-950">
+                <span>View details</span>
+                <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-950 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-extrabold text-amber-800 uppercase tracking-wider">User Emergency Reports</span>
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <div 
+              onClick={() => setActiveStatModal('reports')}
+              className="p-5 rounded-2xl bg-amber-50/80 hover:bg-amber-100/80 border border-amber-200 text-amber-950 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-extrabold text-amber-800 uppercase tracking-wider">User Emergency Reports</span>
+                  <AlertTriangle className="w-5 h-5 text-amber-600 group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="text-2xl font-extrabold">{userReports.filter(r => r.status === 'pending').length} Pending Reports</h3>
+                <p className="text-[11px] font-semibold text-amber-700 mt-1">{userReports.length} total reports received</p>
               </div>
-              <h3 className="text-2xl font-extrabold">{userReports.filter(r => r.status === 'pending').length} Pending Reports</h3>
-              <p className="text-[11px] font-semibold text-amber-700 mt-1">{userReports.length} total reports received</p>
+              <div className="mt-4 pt-2.5 border-t border-amber-200/70 flex items-center justify-between text-[11px] font-bold text-amber-800 group-hover:text-amber-950">
+                <span>View details</span>
+                <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-blue-50/80 border border-blue-200 text-blue-950 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-extrabold text-blue-800 uppercase tracking-wider">Verified NGOs</span>
-                <Building2 className="w-5 h-5 text-blue-600" />
+            <div 
+              onClick={() => setActiveStatModal('ngos')}
+              className="p-5 rounded-2xl bg-blue-50/80 hover:bg-blue-100/80 border border-blue-200 text-blue-950 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-extrabold text-blue-800 uppercase tracking-wider">Verified NGOs</span>
+                  <Building2 className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="text-2xl font-extrabold">42,746 NGOs</h3>
+                <p className="text-[11px] font-semibold text-blue-700 mt-1">Statewide Directory Audit</p>
               </div>
-              <h3 className="text-2xl font-extrabold">42,746 NGOs</h3>
-              <p className="text-[11px] font-semibold text-blue-700 mt-1">Statewide Directory Audit</p>
+              <div className="mt-4 pt-2.5 border-t border-blue-200/70 flex items-center justify-between text-[11px] font-bold text-blue-800 group-hover:text-blue-950">
+                <span>View details</span>
+                <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
             </div>
 
           </div>
@@ -597,6 +783,254 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* TAB 5: VOLUNTEER OPENINGS WORKFLOW */}
+          {tabParam === 'volunteer_openings' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-extrabold text-slate-900">Volunteer Openings Control & Approval Queue</h2>
+                  <p className="text-xs text-slate-500 font-medium">Review pending openings submitted by NGOs, approve live drives, or post direct Secretariat openings.</p>
+                </div>
+
+                <button
+                  onClick={() => setShowAdminPostOpeningModal(true)}
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Post Direct Opening (Auto-Active)</span>
+                </button>
+              </div>
+
+              {/* Sub-tabs Filter */}
+              <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto custom-scrollbar">
+                {[
+                  { id: 'pending', label: `Pending (${adminOpenings.filter(o => o.status === 'pending').length})` },
+                  { id: 'active', label: `Active (${adminOpenings.filter(o => o.status === 'active').length})` },
+                  { id: 'rejected', label: `Rejected (${adminOpenings.filter(o => o.status === 'rejected').length})` },
+                  { id: 'closed', label: `Closed (${adminOpenings.filter(o => o.status === 'closed').length})` },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setAdminOpeningFilter(t.id)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
+                      adminOpeningFilter === t.id
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Openings List */}
+              {adminOpenings.filter(o => o.status === adminOpeningFilter).length === 0 ? (
+                <div className="text-center py-10 text-slate-500">
+                  <Users className="w-10 h-10 mx-auto mb-2 text-slate-400 opacity-60" />
+                  <p className="font-bold text-sm">No {adminOpeningFilter} volunteer openings found</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {adminOpenings.filter(o => o.status === adminOpeningFilter).map((op) => (
+                    <div key={op.id} className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                            {op.category_tag || 'Volunteer'}
+                          </span>
+                          {op.blood_groups_needed && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300">
+                              Needs: {op.blood_groups_needed}
+                            </span>
+                          )}
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
+                            op.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                            op.status === 'active' ? 'bg-emerald-100 text-emerald-800' :
+                            op.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-slate-200 text-slate-700'
+                          }`}>
+                            {op.status}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-500 font-semibold">📍 {op.district}</span>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900">{op.title}</h3>
+                        <p className="text-xs text-slate-600 font-medium">Submitted by: <span className="font-bold text-slate-800">{op.ngo_name}</span> • ⏰ {op.time_commitment}</p>
+                        {op.description && <p className="text-xs text-slate-600 mt-1 bg-white p-3 rounded-xl border border-slate-200">{op.description}</p>}
+                        {op.rejection_reason && (
+                          <p className="text-xs font-bold text-rose-700 mt-2 bg-rose-50 p-2.5 rounded-xl border border-rose-200">
+                            ⚠️ Rejection Reason: {op.rejection_reason}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[10px] text-slate-400 font-semibold">
+                          Created: {new Date(op.created_at).toLocaleDateString()}
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          {op.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => handleApproveOpening(op)}
+                                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition cursor-pointer"
+                              >
+                                Approve Opening ✓
+                              </button>
+                              <button
+                                onClick={() => setShowRejectModal(op)}
+                                className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition cursor-pointer"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+
+                          {op.status === 'active' && (
+                            <button
+                              onClick={() => handleCloseOpening(op.id)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs transition cursor-pointer"
+                            >
+                              Close Opening
+                            </button>
+                          )}
+
+                          {op.status === 'closed' && (
+                            <button
+                              onClick={() => handleApproveOpening(op)}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition cursor-pointer"
+                            >
+                              Re-open
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleDeleteOpeningAction(op.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* REJECT REASON MODAL */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-5 bg-rose-700 text-white relative">
+              <button onClick={() => setShowRejectModal(null)} className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 text-white"><X className="w-5 h-5" /></button>
+              <h2 className="text-base font-black">Reject Volunteer Opening</h2>
+              <p className="text-xs text-rose-100 font-medium">Specify a reason for rejecting "{showRejectModal.title}"</p>
+            </div>
+
+            <form onSubmit={handleRejectOpeningSubmit} className="p-5 space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Rejection Reason *</label>
+                <textarea
+                  required
+                  rows="3"
+                  value={rejectionReasonInput}
+                  onChange={(e) => setRejectionReasonInput(e.target.value)}
+                  placeholder="e.g. Needs clearer venue details or NGO verification documents..."
+                  className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:border-rose-600 resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRejectModal(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md"
+                >
+                  Confirm Rejection
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADMIN DIRECT POST OPENING MODAL */}
+      {showAdminPostOpeningModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-5 bg-blue-700 text-white relative">
+              <button onClick={() => setShowAdminPostOpeningModal(false)} className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 text-white"><X className="w-5 h-5" /></button>
+              <h2 className="text-base font-black">Post Official Volunteer Opening</h2>
+              <p className="text-xs text-blue-100 font-medium">Direct publication (auto-active) on TN NGO Connect</p>
+            </div>
+
+            <form onSubmit={handleAdminCreateOpening} className="p-6 overflow-y-auto space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Opening Title *</label>
+                <input required type="text" value={adminOpeningForm.title} onChange={(e) => setAdminOpeningForm({...adminOpeningForm, title: e.target.value})} placeholder="e.g. Disaster Relief Pack Volunteer" className="w-full p-2.5 rounded-xl border border-slate-300" />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Organization / Department Name *</label>
+                <input required type="text" value={adminOpeningForm.ngo_name} onChange={(e) => setAdminOpeningForm({...adminOpeningForm, ngo_name: e.target.value})} placeholder="State Secretariat / Partner NGO" className="w-full p-2.5 rounded-xl border border-slate-300" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-700 font-bold">District *</label>
+                  <select value={adminOpeningForm.district} onChange={(e) => setAdminOpeningForm({...adminOpeningForm, district: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300">
+                    {ALL_TN_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-slate-700 font-bold">Category Tag *</label>
+                  <select value={adminOpeningForm.category_tag} onChange={(e) => setAdminOpeningForm({...adminOpeningForm, category_tag: e.target.value})} className="w-full p-2.5 rounded-xl border border-slate-300">
+                    <option value="Urgent Need">Urgent Need</option>
+                    <option value="High Impact">High Impact</option>
+                    <option value="Outdoor">Outdoor</option>
+                    <option value="Community">Community</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-700 font-bold">Time Commitment *</label>
+                  <input required type="text" value={adminOpeningForm.time_commitment} onChange={(e) => setAdminOpeningForm({...adminOpeningForm, time_commitment: e.target.value})} placeholder="e.g. 4 hrs/week" className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-slate-700 font-bold">Blood Groups Needed (Optional)</label>
+                  <input type="text" value={adminOpeningForm.blood_groups_needed} onChange={(e) => setAdminOpeningForm({...adminOpeningForm, blood_groups_needed: e.target.value})} placeholder="e.g. O+, O-, AB-" className="w-full p-2.5 rounded-xl border border-slate-300" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Description</label>
+                <textarea rows="3" value={adminOpeningForm.description} onChange={(e) => setAdminOpeningForm({...adminOpeningForm, description: e.target.value})} placeholder="Provide role responsibilities and requirements..." className="w-full p-2.5 rounded-xl border border-slate-300 resize-none" />
+              </div>
+
+              <button type="submit" className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md">
+                Publish Opening Now
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
@@ -777,6 +1211,221 @@ export default function AdminDashboard() {
                 ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* STAT CARDS DETAILS MODAL */}
+      {activeStatModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full sm:max-w-2xl rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+            
+            {/* Modal Header */}
+            <div className={`p-5 text-white relative flex items-center justify-between ${
+              activeStatModal === 'camps' ? 'bg-purple-700' :
+              activeStatModal === 'alerts' ? 'bg-rose-700' :
+              activeStatModal === 'reports' ? 'bg-amber-600' : 'bg-blue-700'
+            }`}>
+              <div>
+                <span className="text-[10px] uppercase tracking-wider font-extrabold opacity-80">Secretariat Live Audit</span>
+                <h2 className="text-base sm:text-lg font-black">
+                  {activeStatModal === 'camps' && 'Camps Managed Directory'}
+                  {activeStatModal === 'alerts' && 'Active Public Emergency Alerts'}
+                  {activeStatModal === 'reports' && 'User Emergency Reports Audit'}
+                  {activeStatModal === 'ngos' && 'Verified NGO Directory'}
+                </h2>
+              </div>
+              <button 
+                onClick={() => setActiveStatModal(null)} 
+                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition cursor-pointer"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-3 text-xs flex-1">
+              
+              {/* 1. CAMPS MANAGED LIST */}
+              {activeStatModal === 'camps' && (
+                campsList.length === 0 ? (
+                  <div className="text-center py-10 text-slate-500">
+                    <Calendar className="w-10 h-10 mx-auto mb-2 text-slate-400 opacity-60" />
+                    <p className="font-bold text-sm">No camps currently recorded</p>
+                    <p className="text-xs text-slate-400">New camps created by administrators will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {campsList.map((evt) => (
+                      <div key={evt.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800 border border-purple-200">
+                            {evt.category} Camp ({evt.camp_type})
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                            Active
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900">{evt.title}</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-slate-600 font-semibold text-xs">
+                          <p>🏛️ Organizer: <span className="text-slate-800 font-bold">{evt.org}</span></p>
+                          <p>📍 Location: <span className="text-slate-800 font-bold">{evt.location} ({evt.district})</span></p>
+                          <p>⏰ Date & Time: <span className="text-slate-800 font-bold">{evt.date}</span></p>
+                          <p>👥 Capacity: <span className="text-emerald-700 font-bold">{evt.spots_available || 100} spots remaining</span></p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+
+              {/* 2. ACTIVE STATE ALERTS LIST */}
+              {activeStatModal === 'alerts' && (
+                adminEmergencies.filter(e => e.status === 'active').length === 0 ? (
+                  <div className="text-center py-10 text-slate-500">
+                    <Siren className="w-10 h-10 mx-auto mb-2 text-slate-400 opacity-60" />
+                    <p className="font-bold text-sm">No active public alerts broadcasted</p>
+                    <p className="text-xs text-slate-400">All emergency broadcasts are currently marked resolved.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {adminEmergencies.filter(e => e.status === 'active').map((emg) => (
+                      <div key={emg.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-white ${
+                            emg.urgency_level === 'critical' ? 'bg-rose-600' : emg.urgency_level === 'high' ? 'bg-orange-500' : 'bg-amber-500 text-slate-950'
+                          }`}>
+                            {emg.urgency_level} Urgency
+                          </span>
+                          <span className="text-[11px] font-bold text-slate-600">
+                            {emg.emergency_type} • District: {emg.district}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900">{emg.title}</h4>
+                        <p className="text-xs text-slate-600 font-medium">{emg.description}</p>
+                        <p className="text-xs font-bold text-rose-700 pt-1 border-t border-slate-200/60">
+                          📞 Contact Hotline: +91 {emg.contact_phone || '9342637020'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+
+              {/* 3. USER EMERGENCY REPORTS LIST */}
+              {activeStatModal === 'reports' && (
+                userReports.length === 0 ? (
+                  <div className="text-center py-10 text-slate-500">
+                    <AlertTriangle className="w-10 h-10 mx-auto mb-2 text-slate-400 opacity-60" />
+                    <p className="font-bold text-sm">No user emergency reports logged</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {userReports.map((report) => (
+                      <div key={report.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200">
+                            {report.emergency_type}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
+                            report.status === 'pending' ? 'bg-amber-100 text-amber-800' : report.status === 'reviewed' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {report.status}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900">Reporter: {report.reporter_name} (+91 {report.mobile_number})</h4>
+                        <p className="text-xs font-bold text-slate-700">📍 Location: {report.location_detail} ({report.district})</p>
+                        <p className="text-xs text-slate-600 font-medium bg-white p-2.5 rounded-xl border border-slate-200">
+                          "{report.description}"
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-semibold text-right">
+                          Submitted: {new Date(report.reported_at).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+
+              {/* 4. VERIFIED NGOS SEARCHABLE & PAGINATED LIST */}
+              {activeStatModal === 'ngos' && (
+                <div className="space-y-3">
+                  {/* Search box */}
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search verified NGOs by name, district, or category..."
+                      value={ngoSearchQuery}
+                      onChange={(e) => {
+                        setNgoSearchQuery(e.target.value);
+                        setNgoCurrentPage(1);
+                      }}
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  {/* NGO List */}
+                  {paginatedNGOs.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">
+                      <Building2 className="w-10 h-10 mx-auto mb-2 text-slate-400 opacity-60" />
+                      <p className="font-bold text-sm">No matching verified NGOs found</p>
+                      <p className="text-xs text-slate-400">Try searching for a different district or category name.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {paginatedNGOs.map((ngo) => (
+                        <div key={ngo.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                {ngo.category}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                ✓ Verified
+                              </span>
+                            </div>
+                            <h4 className="text-sm font-bold text-slate-900">{ngo.name}</h4>
+                            <p className="text-xs text-slate-600 font-medium">📍 {ngo.district}, Tamil Nadu • Reg: {ngo.regNo || 'TN/2026/0418'}</p>
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-500 shrink-0">
+                            Est: {ngo.established || '2016'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Pagination Footer */}
+                  {filteredVerifiedNGOs.length > 0 && (
+                    <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-600">
+                      <span>Showing {((ngoCurrentPage - 1) * ngoItemsPerPage) + 1}–{Math.min(ngoCurrentPage * ngoItemsPerPage, filteredVerifiedNGOs.length)} of {filteredVerifiedNGOs.length} NGOs</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          disabled={ngoCurrentPage === 1}
+                          onClick={() => setNgoCurrentPage(p => Math.max(1, p - 1))}
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white cursor-pointer font-bold"
+                        >
+                          Prev
+                        </button>
+                        <span>{ngoCurrentPage} / {totalNgoPages}</span>
+                        <button
+                          disabled={ngoCurrentPage >= totalNgoPages}
+                          onClick={() => setNgoCurrentPage(p => Math.min(totalNgoPages, p + 1))}
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white cursor-pointer font-bold"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+            </div>
+
           </div>
         </div>
       )}

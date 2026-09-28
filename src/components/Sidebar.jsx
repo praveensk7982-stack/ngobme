@@ -26,12 +26,25 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
   const currentPath = location.pathname;
   const currentSearch = location.search;
 
+  const [pendingVolunteerOpeningsCount, setPendingVolunteerOpeningsCount] = React.useState(0);
+
+  React.useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('tn_ngo_volunteer_openings') || '[]');
+      const count = stored.filter(o => o.status === 'pending').length;
+      setPendingVolunteerOpeningsCount(count);
+    } catch (e) {
+      setPendingVolunteerOpeningsCount(0);
+    }
+  }, [location]);
+
   const navItems = user && role === 'admin' ? [
     { to: '/admin', tabId: null, label: 'Admin Dashboard', icon: ShieldCheck, badge: 'CONTROL', end: true },
     { to: '/admin?tab=camps', tabId: 'camps', label: 'Camps & Events Control', icon: CalendarHeart, badge: null },
     { to: '/admin?tab=emergency_alerts', tabId: 'emergency_alerts', label: 'State Emergency Alerts', icon: Siren, badge: 'LIVE' },
     { to: '/admin?tab=community_reports', tabId: 'community_reports', label: 'Community Reports', icon: AlertTriangle, badge: null },
-    { to: '/admin?tab=ngos', tabId: 'ngos', label: 'NGO Approvals Queue', icon: Building2, badge: null }
+    { to: '/admin?tab=ngos', tabId: 'ngos', label: 'NGO Approvals Queue', icon: Building2, badge: null },
+    { to: '/admin?tab=volunteer_openings', tabId: 'volunteer_openings', label: 'Volunteer Openings', icon: Users, badge: pendingVolunteerOpeningsCount > 0 ? `${pendingVolunteerOpeningsCount}` : null }
   ] : [
     { to: '/', labelKey: 'nav.home', icon: Home, badge: null, end: true },
     { to: '/ngo-directory', labelKey: 'nav.ngoDirectory', icon: Building2, badge: null },

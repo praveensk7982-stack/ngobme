@@ -71,13 +71,7 @@ export default function Home({
 
       {/* Right Sidebar Column */}
       <div className="lg:col-span-4">
-        <RightSidebar 
-          onOpenVolunteerModal={onOpenVolunteerModal}
-          onOpenDonateModal={onOpenDonateModal}
-          onOpenRegisterNGOModal={onOpenRegisterNGOModal}
-          onOpenPostEventModal={onOpenPostEventModal}
-          onSelectEvent={() => onOpenVolunteerModal()}
-        />
+        <RightSidebar />
       </div>
 
     </div>

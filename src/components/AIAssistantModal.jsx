@@ -23,6 +23,7 @@ import { useAuth } from '../context/AuthContext';
 import { useVoiceSearch } from '../utils/useVoiceSearch';
 import { UPCOMING_EVENTS, FEATURED_NGOS } from '../data/mockData';
 import { getVolunteerOpenings } from '../lib/volunteerOpenings';
+import { getApprovedNGOs } from '../lib/ngoData';
 
 export default function AIAssistantModal({ isOpen, onClose }) {
   const { t, i18n } = useTranslation();
@@ -110,11 +111,18 @@ export default function AIAssistantModal({ isOpen, onClose }) {
 
     // Search NGOs
     if (recs.length < 3) {
-      const matchedNGOs = FEATURED_NGOS.filter(ngo => {
+      let approvedNGOList = FEATURED_NGOS;
+      try {
+        approvedNGOList = await getApprovedNGOs();
+      } catch (e) {
+        console.warn('AIAssistant getApprovedNGOs fallback:', e);
+      }
+
+      const matchedNGOs = approvedNGOList.filter(ngo => {
         return (
           ngo.name.toLowerCase().includes(q) ||
           ngo.category.toLowerCase().includes(q) ||
-          ngo.district.toLowerCase().includes(q)
+          (ngo.district && ngo.district.toLowerCase().includes(q))
         );
       });
 

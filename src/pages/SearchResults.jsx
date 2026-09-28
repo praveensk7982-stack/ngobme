@@ -4,6 +4,7 @@ import { Search, Building2, Calendar, Tag, ArrowRight, MapPin, Users, X, Filter 
 import { FEATURED_NGOS, UPCOMING_EVENTS, VOLUNTEER_OPPORTUNITIES, CATEGORIES } from '../data/mockData';
 import { getVolunteerOpenings } from '../lib/volunteerOpenings';
 import { matchDistrict } from '../utils/districtUtils';
+import { getApprovedNGOs } from '../lib/ngoData';
 
 export default function SearchResults({ onSelectNGO: propOnSelectNGO }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,8 +18,9 @@ export default function SearchResults({ onSelectNGO: propOnSelectNGO }) {
 
   const [activeTabFilter, setActiveTabFilter] = useState('all');
   const [dynamicVolunteerOpenings, setDynamicVolunteerOpenings] = useState([]);
+  const [approvedNGOs, setApprovedNGOs] = useState(FEATURED_NGOS);
 
-  // Fetch dynamic volunteer openings from Supabase/LocalStorage
+  // Fetch dynamic volunteer openings & approved NGOs
   useEffect(() => {
     let isMounted = true;
     getVolunteerOpenings().then((data) => {
@@ -28,6 +30,15 @@ export default function SearchResults({ onSelectNGO: propOnSelectNGO }) {
     }).catch((err) => {
       console.warn('SearchResults volunteer fetch fallback:', err);
     });
+
+    getApprovedNGOs().then((data) => {
+      if (isMounted && data && data.length > 0) {
+        setApprovedNGOs(data);
+      }
+    }).catch((err) => {
+      console.warn('SearchResults approved NGOs fetch fallback:', err);
+    });
+
     return () => { isMounted = false; };
   }, []);
 
@@ -40,14 +51,14 @@ export default function SearchResults({ onSelectNGO: propOnSelectNGO }) {
 
   const normQ = queryParam.toLowerCase().trim();
 
-  // 1. Filter NGOs
-  const filteredNGOs = FEATURED_NGOS.filter((ngo) => {
+  // 1. Filter Approved NGOs
+  const filteredNGOs = approvedNGOs.filter((ngo) => {
     const matchesDistrict = matchDistrict(ngo.district, districtParam);
     const matchesText = !normQ ||
       ngo.name.toLowerCase().includes(normQ) ||
       ngo.category.toLowerCase().includes(normQ) ||
-      ngo.description.toLowerCase().includes(normQ) ||
-      ngo.district.toLowerCase().includes(normQ);
+      (ngo.description && ngo.description.toLowerCase().includes(normQ)) ||
+      (ngo.district && ngo.district.toLowerCase().includes(normQ));
     return matchesDistrict && matchesText;
   });
 

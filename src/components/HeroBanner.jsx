@@ -6,6 +6,7 @@ import { ALL_TN_DISTRICTS, FEATURED_NGOS, UPCOMING_EVENTS, VOLUNTEER_OPPORTUNITI
 import { getVolunteerOpenings } from '../lib/volunteerOpenings';
 import { matchDistrict } from '../utils/districtUtils';
 import { useVoiceSearch } from '../utils/useVoiceSearch';
+import { getApprovedNGOs } from '../lib/ngoData';
 
 export default function HeroBanner({ selectedDistrict: propDistrict, setSelectedDistrict: propSetDistrict }) {
   const { t } = useTranslation();
@@ -15,11 +16,12 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
   const [isFocused, setIsFocused] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [dynamicVolunteerOpenings, setDynamicVolunteerOpenings] = useState([]);
+  const [approvedNGOs, setApprovedNGOs] = useState(FEATURED_NGOS);
 
   const containerRef = useRef(null);
   const navigate = useNavigate();
 
-  // Load dynamic volunteer openings on mount
+  // Load dynamic volunteer openings & approved NGOs on mount
   useEffect(() => {
     let isMounted = true;
     getVolunteerOpenings().then(data => {
@@ -29,6 +31,15 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
     }).catch(err => {
       console.warn('HeroBanner volunteer fetch fallback:', err);
     });
+
+    getApprovedNGOs().then(data => {
+      if (isMounted && data && data.length > 0) {
+        setApprovedNGOs(data);
+      }
+    }).catch(err => {
+      console.warn('HeroBanner approved NGOs fetch fallback:', err);
+    });
+
     return () => { isMounted = false; };
   }, []);
 
@@ -57,12 +68,12 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
   // Filtered dropdown data based strictly on selected district and search text
   const normQ = searchText.toLowerCase().trim();
 
-  const filteredNGOs = FEATURED_NGOS.filter((ngo) => {
+  const filteredNGOs = approvedNGOs.filter((ngo) => {
     const matchesDist = matchDistrict(ngo.district, district);
     const matchesText = !normQ || 
       ngo.name.toLowerCase().includes(normQ) ||
       ngo.category.toLowerCase().includes(normQ) ||
-      ngo.description.toLowerCase().includes(normQ);
+      (ngo.description && ngo.description.toLowerCase().includes(normQ));
     return matchesDist && matchesText;
   }).slice(0, 5);
 

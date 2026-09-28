@@ -32,10 +32,13 @@ import {
   deleteVolunteerOpening, 
   sendInAppNotification 
 } from '../../lib/volunteerOpenings';
+import { getPendingNGOs, updateNGOStatus } from '../../lib/ngoData';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AdminDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
+  const { role: authRole } = useAuth();
 
   // Volunteer Openings Admin State
   const [adminOpenings, setAdminOpenings] = useState([]);
@@ -257,17 +260,71 @@ export default function AdminDashboard() {
   ]);
 
   // NGO Approvals State
-  const [pendingNGOs, setPendingNGOs] = useState([
-    { id: 'p-1', name: 'Pasumai Delta Youth Trust', district: 'Thanjavur', regNo: 'TN/2026/00918', category: 'Environment', date: '2 hours ago' },
-    { id: 'p-2', name: 'Annai Therasa Care Home', district: 'Madurai', regNo: 'TN/2026/00919', category: 'Elderly Care', date: '5 hours ago' }
-  ]);
-  const [approvedNGOIds, setApprovedNGOIds] = useState([]);
+  const [pendingNGOList, setPendingNGOList] = useState([]);
+  const [loadingPendingNGOs, setLoadingPendingNGOs] = useState(true);
+  const [showNGORejectModal, setShowNGORejectModal] = useState(null);
+  const [ngoRejectionReason, setNgoRejectionReason] = useState('');
+  const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
     fetchCamps();
     fetchAdminEmergencies();
     fetchUserReports();
+    loadPendingNGOs();
   }, []);
+
+  const loadPendingNGOs = async () => {
+    setLoadingPendingNGOs(true);
+    try {
+      const list = await getPendingNGOs();
+      setPendingNGOList(list);
+    } catch (err) {
+      console.error('Error loading pending NGOs:', err);
+    } finally {
+      setLoadingPendingNGOs(false);
+    }
+  };
+
+  const handleApproveNGO = async (ngo) => {
+    if (authRole !== 'admin') {
+      setToastMessage({ type: 'error', text: 'Unauthorized: Only administrators can approve NGOs.' });
+      setTimeout(() => setToastMessage(null), 3500);
+      return;
+    }
+    try {
+      await updateNGOStatus(ngo.id || ngo.reg_number, 'approved');
+      setToastMessage({ type: 'success', text: `NGO "${ngo.name}" has been approved!` });
+      setTimeout(() => setToastMessage(null), 3500);
+      loadPendingNGOs();
+    } catch (err) {
+      setToastMessage({ type: 'error', text: err.message || 'Failed to approve NGO.' });
+      setTimeout(() => setToastMessage(null), 3500);
+    }
+  };
+
+  const handleRejectNGOSubmit = async (e) => {
+    e.preventDefault();
+    if (!showNGORejectModal) return;
+    if (authRole !== 'admin') {
+      setToastMessage({ type: 'error', text: 'Unauthorized: Only administrators can reject NGOs.' });
+      setTimeout(() => setToastMessage(null), 3500);
+      return;
+    }
+    const ngo = showNGORejectModal;
+    const reason = ngoRejectionReason.trim() || 'Registration details could not be verified.';
+
+    try {
+      await updateNGOStatus(ngo.id || ngo.reg_number, 'rejected', reason);
+      setToastMessage({ type: 'success', text: `NGO "${ngo.name}" has been rejected.` });
+      setTimeout(() => setToastMessage(null), 3500);
+      setShowNGORejectModal(null);
+      setNgoRejectionReason('');
+      loadPendingNGOs();
+    } catch (err) {
+      setToastMessage({ type: 'error', text: err.message || 'Failed to reject NGO.' });
+      setTimeout(() => setToastMessage(null), 3500);
+    }
+  };
 
   const fetchCamps = async () => {
     try {
@@ -761,25 +818,75 @@ export default function AdminDashboard() {
           {/* TAB 4: NGO APPROVALS */}
           {(tabParam === 'ngos' || tabParam === 'ngo_approvals') && (
             <div className="space-y-4">
-              <h3 className="text-base font-extrabold text-slate-900">Pending NGO Verification Queue</h3>
-              <div className="space-y-3">
-                {pendingNGOs.map((ngo) => (
-                  <div key={ngo.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4">
-                    <div>
-                      <span className="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold">Reg No: {ngo.regNo}</span>
-                      <h4 className="text-sm font-bold text-slate-900 mt-1">{ngo.name}</h4>
-                      <p className="text-xs text-slate-600">Category: {ngo.category} • {ngo.district}, Tamil Nadu</p>
-                    </div>
-
-                    <button
-                      onClick={() => setApprovedNGOIds([...approvedNGOIds, ngo.id])}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-sm hover:bg-emerald-700 transition"
-                    >
-                      Approve NGO
-                    </button>
-                  </div>
-                ))}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">Pending NGO Verification Queue</h3>
+                  <p className="text-xs text-slate-500 font-medium">Review and verify non-profit registration applications submitted by users.</p>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200 self-start sm:self-auto">
+                  {pendingNGOList.length} Applications Pending
+                </span>
               </div>
+
+              {loadingPendingNGOs ? (
+                <div className="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200">
+                  <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-slate-500">Loading pending verification queue...</p>
+                </div>
+              ) : pendingNGOList.length === 0 ? (
+                <div className="bg-slate-50 rounded-2xl p-10 text-center border border-slate-200 space-y-2">
+                  <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
+                  <h4 className="text-sm font-bold text-slate-800">NGO Approvals Queue Empty</h4>
+                  <p className="text-xs text-slate-500">There are currently no pending NGO applications waiting for admin verification.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingNGOList.map((ngo) => (
+                    <div key={ngo.id || ngo.reg_number} className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-200">
+                            Reg No: {ngo.reg_number || ngo.regNo}
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold">
+                            {ngo.category}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900">{ngo.name}</h4>
+                        <p className="text-xs text-slate-600 font-medium">
+                          📍 {ngo.district}, Tamil Nadu • 👤 Contact: <span className="font-bold text-slate-800">{ngo.contact_person}</span> (+91 {ngo.mobile_number}) • ✉️ {ngo.email}
+                        </p>
+                        {ngo.description && (
+                          <p className="text-xs text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200 mt-2">
+                            "{ngo.description}"
+                          </p>
+                        )}
+                        <p className="text-[10px] text-slate-400 font-medium pt-0.5">
+                          Submitted: {new Date(ngo.created_at || Date.now()).toLocaleString()}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <button
+                          onClick={() => handleApproveNGO(ngo)}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition cursor-pointer active:scale-95"
+                        >
+                          Approve NGO ✓
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowNGORejectModal(ngo);
+                            setNgoRejectionReason('');
+                          }}
+                          className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition cursor-pointer active:scale-95"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1421,12 +1528,65 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                </div>
-              )}
+            </div>
+          )}
 
+        </div>
+
+      </div>
+    </div>
+  )}
+
+      {/* NGO REJECT REASON MODAL */}
+      {showNGORejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="p-5 bg-rose-700 text-white relative">
+              <button onClick={() => setShowNGORejectModal(null)} className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 text-white"><X className="w-5 h-5" /></button>
+              <h2 className="text-base font-black">Reject NGO Registration</h2>
+              <p className="text-xs text-rose-100 font-medium">Specify a reason for rejecting "{showNGORejectModal.name}"</p>
             </div>
 
+            <form onSubmit={handleRejectNGOSubmit} className="p-5 space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block mb-1 text-slate-700 font-bold">Rejection Reason *</label>
+                <textarea
+                  required
+                  rows="3"
+                  value={ngoRejectionReason}
+                  onChange={(e) => setNgoRejectionReason(e.target.value)}
+                  placeholder="e.g. Registration number verification failed, missing registration certificate..."
+                  className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:border-rose-600 resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNGORejectModal(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md cursor-pointer"
+                >
+                  Confirm Rejection
+                </button>
+              </div>
+            </form>
           </div>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold flex items-center gap-2 animate-in slide-in-from-bottom-5 ${
+          toastMessage.type === 'success' ? 'bg-emerald-900 text-emerald-100 border-emerald-700' : 'bg-rose-900 text-rose-100 border-rose-700'
+        }`}>
+          <span>{toastMessage.type === 'success' ? '✓' : '⚠️'}</span>
+          <span>{toastMessage.text}</span>
         </div>
       )}
 

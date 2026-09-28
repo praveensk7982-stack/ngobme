@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, ShieldCheck, CheckCircle2, IndianRupee, Sparkles, CreditCard, Lock } from 'lucide-react';
 import { FEATURED_NGOS } from '../data/mockData';
+import { getApprovedNGOs } from '../lib/ngoData';
 
 export default function Donate() {
-  const [selectedNGO, setSelectedNGO] = useState(FEATURED_NGOS[0].name);
+  const [approvedNGOs, setApprovedNGOs] = useState(FEATURED_NGOS);
+  const [selectedNGO, setSelectedNGO] = useState(FEATURED_NGOS[0]?.name || '');
   const [amount, setAmount] = useState('1000');
   const [customAmount, setCustomAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('UPI');
@@ -14,6 +16,21 @@ export default function Donate() {
     pan: 'ABCDE1234F',
     phone: '+91 94440 88776'
   });
+
+  useEffect(() => {
+    async function loadNGOs() {
+      try {
+        const list = await getApprovedNGOs();
+        if (list && list.length > 0) {
+          setApprovedNGOs(list);
+          setSelectedNGO(list[0].name);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch approved NGOs for donation:', err);
+      }
+    }
+    loadNGOs();
+  }, []);
 
   const handleAmountClick = (val) => {
     setAmount(val);
@@ -79,8 +96,8 @@ export default function Donate() {
               onChange={(e) => setSelectedNGO(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl border border-slate-300 focus:border-emerald-600 focus:outline-none bg-slate-50 text-xs font-bold text-slate-800 cursor-pointer"
             >
-              {FEATURED_NGOS.map((ngo) => (
-                <option key={ngo.id} value={ngo.name}>
+              {approvedNGOs.map((ngo) => (
+                <option key={ngo.id || ngo.reg_number} value={ngo.name}>
                   {ngo.name} ({ngo.category} • {ngo.district})
                 </option>
               ))}

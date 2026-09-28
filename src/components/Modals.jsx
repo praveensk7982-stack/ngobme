@@ -15,7 +15,9 @@ import {
   IndianRupee,
   Share2
 } from 'lucide-react';
-import { ALL_TN_DISTRICTS } from '../data/mockData';
+import { ALL_TN_DISTRICTS, CATEGORIES } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import { registerNewNGO } from '../lib/ngoData';
 
 export function NGOProfileModal({ ngo, onClose, onOpenDonateModal }) {
   if (!ngo) return null;
@@ -338,49 +340,244 @@ export function DonateModal({ onClose }) {
 
 
 export function RegisterNGOModal({ onClose }) {
+  const { user: authUser } = useAuth();
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const [formData, setFormData] = useState({
+    name: '',
+    reg_number: '',
+    category: 'Medical & Health',
+    district: authUser?.district || 'Chennai',
+    description: '',
+    contact_person: authUser?.name || '',
+    mobile_number: authUser?.phone || '',
+    email: authUser?.email || '',
+    logo: '',
+    website: ''
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrors({});
+
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'NGO Name is required.';
+    if (!formData.reg_number.trim()) newErrors.reg_number = 'Registration Number is required.';
+    if (!formData.description.trim()) newErrors.description = 'Description is required.';
+    if (!formData.contact_person.trim()) newErrors.contact_person = 'Contact Person is required.';
+
+    if (!formData.mobile_number.trim()) {
+      newErrors.mobile_number = 'Mobile Number is required.';
+    } else if (!/^[6-9]\d{9}$/.test(formData.mobile_number.trim())) {
+      newErrors.mobile_number = 'Enter a valid 10-digit mobile number.';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email Address is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = 'Enter a valid email address.';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await registerNewNGO(formData, authUser);
+      setSubmitted(true);
+    } catch (err) {
+      setErrors({ server: err.message || 'Failed to submit NGO for registration.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 border border-slate-200 relative">
+      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-slate-200 relative max-h-[90vh] overflow-y-auto">
         <button onClick={onClose} className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 rounded-full">
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
             <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-extrabold text-slate-900">Add / Register NGO</h2>
-            <p className="text-xs text-slate-500 font-medium">Get listed on TN NGO Connect</p>
+            <h2 className="text-lg font-extrabold text-slate-900">Register your NGO</h2>
+            <p className="text-xs text-slate-500 font-medium">Get listed & verified on TN NGO Connect</p>
           </div>
         </div>
 
         {submitted ? (
           <div className="p-6 text-center space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-amber-500 mx-auto" />
-            <h3 className="text-base font-bold">Application Submitted!</h3>
-            <p className="text-xs text-slate-600">Our verification team will inspect your Darpan / 80G credentials and approve within 48 hours.</p>
+            <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto animate-bounce" />
+            <h3 className="text-base font-extrabold text-slate-900">Submission Received!</h3>
+            <p className="text-xs text-slate-700 font-semibold bg-emerald-50 p-3 rounded-2xl border border-emerald-200">
+              Your NGO has been submitted for admin verification.
+            </p>
+            <p className="text-[11px] text-slate-500">
+              Track status anytime under <span className="font-bold text-slate-800">My Activity</span> page.
+            </p>
+            <button
+              onClick={onClose}
+              className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs shadow-md"
+            >
+              Close
+            </button>
           </div>
         ) : (
-          <form onSubmit={(e) => { e.preventDefault(); setSubmitted(true); setTimeout(onClose, 2500); }} className="space-y-3 text-xs font-semibold">
-            <div>
-              <label className="text-slate-600 block mb-1">NGO Name</label>
-              <input required type="text" placeholder="e.g. Pasumai Trust" className="w-full px-3.5 py-2 rounded-xl border border-slate-300" />
+          <form onSubmit={handleSubmit} className="space-y-3 text-xs font-semibold">
+            {errors.server && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                ⚠️ {errors.server}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-slate-700 block mb-1">NGO Name *</label>
+                <input
+                  required
+                  type="text"
+                  placeholder="e.g. Aram Seiya Virumbhu Foundation"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none"
+                />
+                {errors.name && <p className="text-[10px] text-rose-600 font-bold mt-0.5">{errors.name}</p>}
+              </div>
+
+              <div>
+                <label className="text-slate-700 block mb-1">Registration Number *</label>
+                <input
+                  required
+                  type="text"
+                  placeholder="e.g. TN/2026/09812"
+                  value={formData.reg_number}
+                  onChange={(e) => setFormData({ ...formData, reg_number: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none"
+                />
+                {errors.reg_number && <p className="text-[10px] text-rose-600 font-bold mt-0.5">{errors.reg_number}</p>}
+              </div>
             </div>
-            <div>
-              <label className="text-slate-600 block mb-1">NITI Aayog Darpan ID / Reg No.</label>
-              <input required type="text" placeholder="TN/2024/0987654" className="w-full px-3.5 py-2 rounded-xl border border-slate-300" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-slate-700 block mb-1">Category *</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white focus:border-blue-600 focus:outline-none cursor-pointer"
+                >
+                  {CATEGORIES.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-slate-700 block mb-1">Headquarters District *</label>
+                <select
+                  value={formData.district}
+                  onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white focus:border-blue-600 focus:outline-none cursor-pointer"
+                >
+                  {ALL_TN_DISTRICTS.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
             </div>
+
             <div>
-              <label className="text-slate-600 block mb-1">Headquarters District</label>
-              <select className="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white">
-                {ALL_TN_DISTRICTS.map(d => <option key={d}>{d}</option>)}
-              </select>
+              <label className="text-slate-700 block mb-1">NGO Description *</label>
+              <textarea
+                required
+                rows="2"
+                placeholder="Describe your non-profit's mission, key community programs, and goals..."
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none resize-none"
+              />
+              {errors.description && <p className="text-[10px] text-rose-600 font-bold mt-0.5">{errors.description}</p>}
             </div>
-            <button type="submit" className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md mt-2">
-              Submit NGO for Verification
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-slate-700 block mb-1">Contact Person *</label>
+                <input
+                  required
+                  type="text"
+                  placeholder="Lead Contact Name"
+                  value={formData.contact_person}
+                  onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none"
+                />
+                {errors.contact_person && <p className="text-[10px] text-rose-600 font-bold mt-0.5">{errors.contact_person}</p>}
+              </div>
+
+              <div>
+                <label className="text-slate-700 block mb-1">Mobile Number *</label>
+                <input
+                  required
+                  type="tel"
+                  placeholder="10-digit mobile"
+                  value={formData.mobile_number}
+                  onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none"
+                />
+                {errors.mobile_number && <p className="text-[10px] text-rose-600 font-bold mt-0.5">{errors.mobile_number}</p>}
+              </div>
+
+              <div>
+                <label className="text-slate-700 block mb-1">Email Address *</label>
+                <input
+                  required
+                  type="email"
+                  placeholder="Official Email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none"
+                />
+                {errors.email && <p className="text-[10px] text-rose-600 font-bold mt-0.5">{errors.email}</p>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-slate-700 block mb-1">Logo Initials / Image URL (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ASV or https://..."
+                  value={formData.logo}
+                  onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-700 block mb-1">Website URL (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. https://ngo.org"
+                  value={formData.website}
+                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md mt-3 transition cursor-pointer active:scale-95 disabled:opacity-50"
+            >
+              {submitting ? 'Submitting Registration...' : 'Submit NGO for Admin Verification'}
             </button>
           </form>
         )}

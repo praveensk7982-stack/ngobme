@@ -12,13 +12,37 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
 
   const navigate = useNavigate();
 
+  // Keep internal district state in sync with parent prop
+  React.useEffect(() => {
+    if (propDistrict) {
+      setDistrict(propDistrict);
+    }
+  }, [propDistrict]);
+
   // Reusable voice search hook
   const { isListening, speechError: voiceError, toggleVoiceSearch } = useVoiceSearch((transcript) => {
     setSearchText(transcript);
+    const searchParams = new URLSearchParams();
+    if (district && district !== 'All Districts') {
+      searchParams.set('district', district);
+    }
+    if (transcript.trim()) {
+      searchParams.set('q', transcript.trim());
+    }
+    const queryStr = searchParams.toString();
+    navigate(`/search${queryStr ? `?${queryStr}` : ''}`);
   });
 
   const handleVoiceSearch = () => {
     toggleVoiceSearch();
+  };
+
+  const handleDistrictChange = (e) => {
+    const val = e.target.value;
+    setDistrict(val);
+    if (propSetDistrict) {
+      propSetDistrict(val);
+    }
   };
 
   const handleDistrictSearchSubmit = (e) => {
@@ -37,7 +61,7 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
     }
 
     const queryStr = searchParams.toString();
-    navigate(`/ngo-directory${queryStr ? `?${queryStr}` : ''}`);
+    navigate(`/search${queryStr ? `?${queryStr}` : ''}`);
   };
 
   return (
@@ -96,7 +120,7 @@ export default function HeroBanner({ selectedDistrict: propDistrict, setSelected
             
             <select
               value={district}
-              onChange={(e) => setDistrict(e.target.value)}
+              onChange={handleDistrictChange}
               className="w-full sm:w-48 py-2 bg-transparent text-xs sm:text-sm font-bold text-slate-800 focus:outline-none cursor-pointer"
             >
               <option value="All Districts">All 38 Districts</option>

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, MapPin, ShieldCheck, ExternalLink, Building2, Star, Users } from 'lucide-react';
 import { FEATURED_NGOS, ALL_TN_DISTRICTS, CATEGORIES } from '../data/mockData';
 import { getLocalizedField } from '../utils/i18nHelpers';
+import { matchDistrict } from '../utils/districtUtils';
 
 export default function NGODirectory({ onSelectNGO }) {
   const { t, i18n } = useTranslation();
@@ -37,7 +38,7 @@ export default function NGODirectory({ onSelectNGO }) {
                           ngo.description.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
                           ngo.district.toLowerCase().includes(searchTerm.toLowerCase().trim());
     const matchesCategory = selectedCategory === 'All Categories' || ngo.category === selectedCategory;
-    const matchesDistrict = selectedDistrict === 'All Districts' || ngo.district === selectedDistrict;
+    const matchesDistrict = matchDistrict(ngo.district, selectedDistrict);
 
     return matchesSearch && matchesCategory && matchesDistrict;
   });

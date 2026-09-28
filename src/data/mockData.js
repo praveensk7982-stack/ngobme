@@ -566,6 +566,56 @@ export const HELP_CENTERS = [
     address: 'CMC Hospital Corridor, Vellore',
     hours: 'Free Emergency Response',
     verified: true
+  },
+  {
+    id: 'hc-5',
+    name: 'Dharmapuri District Headquarters Hospital Emergency Care',
+    district: 'Dharmapuri',
+    service: 'Free Medical Camps',
+    phone: '+91 4342 260 001 / 108',
+    address: 'Netaji Bye Pass Road, Dharmapuri',
+    hours: '24/7 Emergency & Trauma Unit',
+    verified: true
+  },
+  {
+    id: 'hc-6',
+    name: 'Dharmapuri Uyir Blood Bank & Critical Care Unit',
+    district: 'Dharmapuri',
+    service: 'Emergency Blood Supply',
+    phone: '+91 94432 66778',
+    address: 'Opposite New Bus Stand, Dharmapuri',
+    hours: '24 Hours Blood Storage & Dispatch',
+    verified: true
+  },
+  {
+    id: 'hc-7',
+    name: 'Kovai Medical Center Emergency Aid Hub',
+    district: 'Coimbatore',
+    service: 'Free Medical Camps',
+    phone: '+91 422 432 3800',
+    address: 'Avinashi Road, Coimbatore',
+    hours: '24/7 Emergency Response',
+    verified: true
+  },
+  {
+    id: 'hc-8',
+    name: 'Tiruchirappalli GH Casualty & Blood Donors Wing',
+    district: 'Tiruchirappalli',
+    service: 'Emergency Blood Supply',
+    phone: '+91 431 240 1022',
+    address: 'Collectorate Road, Tiruchirappalli',
+    hours: '24/7 Blood Storage Center',
+    verified: true
+  },
+  {
+    id: 'hc-9',
+    name: 'Thanjavur Delta Disaster Relief & Meal Center',
+    district: 'Thanjavur',
+    service: 'Free Meal Distribution',
+    phone: '+91 4362 277 888',
+    address: 'Old Bus Stand Corridor, Thanjavur',
+    hours: 'Daily Free Meals 8AM - 8PM',
+    verified: true
   }
 ];
 

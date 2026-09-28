@@ -12,8 +12,9 @@ import {
   ShieldCheck, 
   Building2 
 } from 'lucide-react';
-import { UPCOMING_EVENTS } from '../data/mockData';
+import { UPCOMING_EVENTS, ALL_TN_DISTRICTS } from '../data/mockData';
 import { getLocalizedField, formatDate } from '../utils/i18nHelpers';
+import { matchDistrict } from '../utils/districtUtils';
 import CampDetailsModal from '../components/CampDetailsModal';
 
 export default function CampsEvents({ onOpenPostEventModal }) {
@@ -22,6 +23,7 @@ export default function CampsEvents({ onOpenPostEventModal }) {
 
   const [campTypeFilter, setCampTypeFilter] = useState('all'); // 'all' | 'government' | 'private'
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
+  const [selectedDistrict, setSelectedDistrict] = useState(searchParams.get('district') || 'All Districts');
   const [selectedCamp, setSelectedCamp] = useState(null);
   const [registeredEvents, setRegisteredEvents] = useState([]);
 
@@ -37,15 +39,19 @@ export default function CampsEvents({ onOpenPostEventModal }) {
       const cat = searchParams.get('category');
       if (cat) setSelectedCategoryFilter(cat);
     }
+    if (searchParams.has('district')) {
+      setSelectedDistrict(searchParams.get('district') || 'All Districts');
+    }
   }, [searchParams]);
 
   const categories = ['All', 'Medical', 'Blood', 'Health', 'Environment', 'Education', 'Food'];
 
-  // Filter events by both camp_type and category
+  // Filter events by camp_type, category, and district
   const filteredEvents = UPCOMING_EVENTS.filter(evt => {
     const matchesType = campTypeFilter === 'all' || evt.camp_type === campTypeFilter;
     const matchesCategory = selectedCategoryFilter === 'All' || evt.category === selectedCategoryFilter;
-    return matchesType && matchesCategory;
+    const matchesDistrict = matchDistrict(evt.district, selectedDistrict);
+    return matchesType && matchesCategory && matchesDistrict;
   });
 
   const handleRegisterSuccess = (eventId) => {
@@ -127,22 +133,40 @@ export default function CampsEvents({ onOpenPostEventModal }) {
           </button>
         </div>
 
-        {/* 2. Category Pills Filter */}
-        <div className="mt-4 flex flex-wrap items-center gap-2 pt-4 border-t border-slate-100">
-          <span className="text-xs font-bold text-slate-500 mr-2">{t('campsPage.categoryLabel')}</span>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategoryFilter(cat)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                selectedCategoryFilter === cat
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+        {/* 2. Category Pills Filter & District Selector */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 mr-1">{t('campsPage.categoryLabel')}</span>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategoryFilter(cat)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  selectedCategoryFilter === cat
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {getCategoryFilterLabel(cat)}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
+            <select
+              value={selectedDistrict}
+              onChange={(e) => setSelectedDistrict(e.target.value)}
+              className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:bg-white cursor-pointer"
             >
-              {getCategoryFilterLabel(cat)}
-            </button>
-          ))}
+              <option value="All Districts">{t('directory.allDistricts')}</option>
+              {ALL_TN_DISTRICTS.map((d) => (
+                <option key={d} value={d}>
+                  {t(`districts.${d}`, d)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

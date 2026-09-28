@@ -8,7 +8,6 @@ import {
   ChevronDown, 
   Menu, 
   User, 
-  Heart, 
   LogOut, 
   SlidersHorizontal,
   CheckCircle2,
@@ -32,7 +31,7 @@ export default function TopBar({
   searchQuery, 
   setSearchQuery, 
   setMobileOpen,
-  onOpenDonateModal
+  selectedDistrict
 }) {
   const { t } = useTranslation();
   const { user: authUser, role, logout } = useAuth();
@@ -80,7 +79,12 @@ export default function TopBar({
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && searchQuery.trim().length > 0) {
       setIsFocused(false);
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      const params = new URLSearchParams();
+      if (selectedDistrict && selectedDistrict !== 'All Districts') {
+        params.set('district', selectedDistrict);
+      }
+      params.set('q', searchQuery.trim());
+      navigate(`/search?${params.toString()}`);
     }
   };
 
@@ -299,7 +303,7 @@ export default function TopBar({
           {/* Global Language Switcher */}
           <LanguageSwitcher />
 
-          {user && role === 'admin' ? (
+          {user && role === 'admin' && (
             <Link
               to="/admin"
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition shadow-sm active:scale-95 shrink-0"
@@ -307,14 +311,6 @@ export default function TopBar({
               <ShieldCheck className="w-4 h-4 text-slate-950" />
               <span className="hidden md:inline">Admin Console</span>
             </Link>
-          ) : (
-            <button
-              onClick={onOpenDonateModal}
-              className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold border border-blue-200 transition shadow-sm active:scale-95 shrink-0"
-            >
-              <Heart className="w-3.5 h-3.5 fill-current text-rose-500" />
-              <span>{t('common.donateNow')}</span>
-            </button>
           )}
 
           {/* AI Assistant Button (Replaces Notification Bell) */}

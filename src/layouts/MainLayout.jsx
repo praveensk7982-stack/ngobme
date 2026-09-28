@@ -45,7 +45,7 @@ export default function MainLayout({
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           setMobileOpen={setMobileOpen}
-          onOpenDonateModal={() => setShowDonateModal(true)}
+          selectedDistrict={selectedDistrict}
           onOpenVolunteerModal={() => setShowVolunteerModal(true)}
         />
 

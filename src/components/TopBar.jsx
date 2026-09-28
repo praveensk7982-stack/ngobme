@@ -25,6 +25,7 @@ import { INITIAL_NOTIFICATIONS, getCombinedSearchData } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import AIAssistantModal from './AIAssistantModal';
+import AIErrorBoundary from './AIErrorBoundary';
 
 import { useVoiceSearch } from '../utils/useVoiceSearch';
 
@@ -46,6 +47,7 @@ export default function TopBar({
     badge: 'Verified Volunteer Lead'
   };
   
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -331,10 +333,12 @@ export default function TopBar({
             </button>
           </div>
 
-          <AIAssistantModal 
-            isOpen={showAIAssistant} 
-            onClose={() => setShowAIAssistant(false)} 
-          />
+          <AIErrorBoundary>
+            <AIAssistantModal 
+              isOpen={showAIAssistant} 
+              onClose={() => setShowAIAssistant(false)} 
+            />
+          </AIErrorBoundary>
 
           <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 

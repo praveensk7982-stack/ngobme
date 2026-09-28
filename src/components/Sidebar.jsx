@@ -31,9 +31,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
     { to: '/admin?tab=camps', tabId: 'camps', label: 'Camps & Events Control', icon: CalendarHeart, badge: null },
     { to: '/admin?tab=emergency_alerts', tabId: 'emergency_alerts', label: 'State Emergency Alerts', icon: Siren, badge: 'LIVE' },
     { to: '/admin?tab=community_reports', tabId: 'community_reports', label: 'Community Reports', icon: AlertTriangle, badge: null },
-    { to: '/admin?tab=ngos', tabId: 'ngos', label: 'NGO Approvals Queue', icon: Building2, badge: null },
-    { to: '/settings', tabId: null, label: 'System Settings', icon: Settings, badge: null },
-    { to: '/', tabId: null, label: 'View Public Portal', icon: Home, badge: 'PREVIEW' }
+    { to: '/admin?tab=ngos', tabId: 'ngos', label: 'NGO Approvals Queue', icon: Building2, badge: null }
   ] : [
     { to: '/', labelKey: 'nav.home', icon: Home, badge: null, end: true },
     { to: '/ngo-directory', labelKey: 'nav.ngoDirectory', icon: Building2, badge: null },

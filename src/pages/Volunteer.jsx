@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Users, 
@@ -21,23 +21,14 @@ export default function Volunteer() {
   const { t } = useTranslation();
   const { user: authUser } = useAuth();
 
+  const formRef = useRef(null);
   const [submitted, setSubmitted] = useState(false);
   const [appliedOps, setAppliedOps] = useState([]);
-  const [bloodWarnings, setBloodWarnings] = useState({}); // { [opId]: warningMessage }
   const [error, setError] = useState('');
+  const [isHighlighted, setIsHighlighted] = useState(false);
 
-  // Modal State for Apply Now
+  // Selected Opening State for Apply Now
   const [selectedOpening, setSelectedOpening] = useState(null);
-  const [applyForm, setApplyForm] = useState({
-    applicant_name: authUser?.name || 'Dharshini Raj',
-    mobile_number: authUser?.phone || '9444088776',
-    email: authUser?.email || 'dharshini@ngo-tn.org',
-    place: authUser?.district ? `${authUser.district}, Tamil Nadu` : 'T. Nagar, Chennai',
-    message: '',
-    blood_group: 'O+'
-  });
-  const [submittingApply, setSubmittingApply] = useState(false);
-  const [applySuccess, setApplySuccess] = useState(false);
 
   const [formData, setFormData] = useState({
     name: authUser?.name || 'Dharshini Raj',
@@ -89,6 +80,50 @@ export default function Volunteer() {
     }
   };
 
+  const getMatchingCategory = (op) => {
+    if (!op) return null;
+    const cat = op.category || '';
+    const title = (op.title || '').toLowerCase();
+    
+    if (cat === 'Education' || title.includes('tutor') || title.includes('school') || title.includes('teach') || title.includes('education')) return 'Education';
+    if (cat === 'Blood Donation' || title.includes('blood')) return 'Blood Donation';
+    if (cat === 'Environment' || title.includes('forest') || title.includes('planting') || title.includes('tree')) return 'Environment';
+    if (cat === 'Elderly Care' || title.includes('senior') || title.includes('elderly') || title.includes('companion')) return 'Elderly Care';
+    if (cat === 'Medical & Health' || title.includes('medical') || title.includes('health') || title.includes('doctor') || title.includes('eye')) return 'Medical & Health';
+    if (cat === 'Disaster Relief' || title.includes('disaster') || title.includes('relief') || title.includes('flood')) return 'Disaster Relief';
+    return cat || null;
+  };
+
+  const handleApplyNowClick = (op) => {
+    setSelectedOpening(op);
+
+    // Auto-fill district & matching interest category
+    const matchedCategory = getMatchingCategory(op);
+    setFormData(prev => {
+      const currentInterests = prev.interests || [];
+      const updatedInterests = matchedCategory && !currentInterests.includes(matchedCategory)
+        ? [...currentInterests, matchedCategory]
+        : currentInterests;
+
+      return {
+        ...prev,
+        district: ALL_TN_DISTRICTS.includes(op.district) ? op.district : prev.district,
+        interests: updatedInterests
+      };
+    });
+
+    // Smooth scroll to form
+    if (formRef.current) {
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Trigger 2-second visual highlight
+    setIsHighlighted(true);
+    setTimeout(() => {
+      setIsHighlighted(false);
+    }, 2000);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -100,6 +135,10 @@ export default function Volunteer() {
     }
 
     try {
+      const appliedForText = selectedOpening 
+        ? `${selectedOpening.title} by ${selectedOpening.ngo}`
+        : null;
+
       // Save volunteer application profile to Supabase volunteers table
       const { error: dbError } = await supabase
         .from('volunteers')
@@ -112,11 +151,35 @@ export default function Volunteer() {
           availability: formData.availability,
           interests: formData.interests,
           blood_group: formData.interests.includes('Blood Donation') ? formData.bloodGroup : null,
+          applied_for: appliedForText,
+          opening_id: selectedOpening ? String(selectedOpening.id) : null,
           created_at: new Date().toISOString()
         });
 
       if (dbError) {
         console.warn('Supabase volunteer insert warning:', dbError.message);
+      }
+
+      // Also save to volunteer_applications if an opening was selected
+      if (selectedOpening) {
+        try {
+          await supabase.from('volunteer_applications').insert({
+            opening_id: String(selectedOpening.id),
+            opening_title: selectedOpening.title,
+            applicant_user_id: authUser?.uid || null,
+            applicant_name: formData.name,
+            mobile_number: formData.phone,
+            email: formData.email,
+            place: `${formData.district}, Tamil Nadu`,
+            blood_group: formData.interests.includes('Blood Donation') ? formData.bloodGroup : null,
+            status: 'pending',
+            applied_at: new Date().toISOString()
+          });
+        } catch (appErr) {
+          console.warn('Supabase volunteer_applications insert notice:', appErr);
+        }
+
+        setAppliedOps(prev => Array.from(new Set([...prev, String(selectedOpening.id)])));
       }
     } catch (err) {
       console.error('Volunteer registration error:', err);
@@ -124,72 +187,6 @@ export default function Volunteer() {
 
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 4000);
-  };
-
-  const handleOpenApplyModal = (op) => {
-    const needed = op.neededBloodGroups || (op.category === 'Blood Donation' ? ['O+', 'O-', 'AB-'] : null);
-    if (needed) {
-      const userBg = applyForm.blood_group || formData.bloodGroup;
-      const isMatch = userBg && needed.includes(userBg);
-      if (!isMatch) {
-        setBloodWarnings(prev => ({
-          ...prev,
-          [op.id]: `This request needs ${needed.join(', ')} blood group. Your registered blood group is ${userBg || 'Not set'}. Priority is given to matching blood types.`
-        }));
-      } else {
-        setBloodWarnings(prev => ({ ...prev, [op.id]: null }));
-      }
-    }
-
-    setSelectedOpening(op);
-    setApplySuccess(false);
-  };
-
-  const handleApplySubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedOpening) return;
-    setSubmittingApply(true);
-
-    const applicationData = {
-      opening_id: String(selectedOpening.id),
-      opening_title: selectedOpening.title,
-      applicant_user_id: authUser?.uid || null,
-      applicant_name: applyForm.applicant_name.trim(),
-      mobile_number: applyForm.mobile_number.trim(),
-      email: applyForm.email.trim() || null,
-      place: applyForm.place.trim(),
-      message: applyForm.message.trim() || null,
-      blood_group: selectedOpening.category === 'Blood Donation' || selectedOpening.neededBloodGroups ? applyForm.blood_group : null,
-      status: 'pending',
-      applied_at: new Date().toISOString()
-    };
-
-    try {
-      const { error: insertErr } = await supabase
-        .from('volunteer_applications')
-        .insert(applicationData);
-
-      if (insertErr) {
-        console.warn('Supabase volunteer_applications insert notice:', insertErr.message);
-      }
-
-      setAppliedOps(prev => Array.from(new Set([...prev, String(selectedOpening.id)])));
-      setApplySuccess(true);
-      setTimeout(() => {
-        setSelectedOpening(null);
-        setApplySuccess(false);
-      }, 2000);
-    } catch (err) {
-      console.error('Volunteer application submit error:', err);
-      setAppliedOps(prev => Array.from(new Set([...prev, String(selectedOpening.id)])));
-      setApplySuccess(true);
-      setTimeout(() => {
-        setSelectedOpening(null);
-        setApplySuccess(false);
-      }, 2000);
-    } finally {
-      setSubmittingApply(false);
-    }
   };
 
   const causesList = ['Medical & Health', 'Blood Donation', 'Education', 'Environment', 'Elderly Care', 'Disaster Relief'];
@@ -218,19 +215,55 @@ export default function Volunteer() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* Left Form Column */}
-        <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
+        <div 
+          ref={formRef}
+          className={`lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border transition-all duration-500 ${
+            isHighlighted 
+              ? 'border-blue-500 ring-4 ring-blue-500/40 shadow-2xl scale-[1.005]' 
+              : 'border-slate-200/80 shadow-sm'
+          }`}
+        >
           <h2 className="text-lg font-extrabold text-slate-900 mb-1 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-blue-600" />
             Volunteer Registration Form
           </h2>
-          <p className="text-xs text-slate-500 font-medium mb-6">Complete your profile to receive instant volunteer drive invites</p>
+          <p className="text-xs text-slate-500 font-medium mb-4">Complete your profile to receive instant volunteer drive invites</p>
+
+          {/* Selected Opening Highlighted Banner */}
+          {selectedOpening && (
+            <div className="mb-5 p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border border-blue-200 text-blue-950 flex items-center justify-between gap-3 shadow-xs animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 font-bold shadow-xs">
+                  <Sparkles className="w-5 h-5 text-amber-300" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-600">Selected Opportunity</p>
+                  <p className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug truncate">
+                    Applying for: <span className="text-blue-700 font-black">{selectedOpening.title}</span> — by <span className="text-slate-800">{selectedOpening.ngo}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedOpening(null)}
+                title="Clear selection"
+                className="p-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-200 transition cursor-pointer shrink-0 shadow-2xs"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {submitted && (
             <div className="mb-6 p-4 rounded-2xl bg-emerald-50 text-emerald-900 border border-emerald-200 flex items-center gap-3 animate-in fade-in">
               <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
               <div>
                 <p className="text-xs font-bold">Registration Profile Updated!</p>
-                <p className="text-[11px] text-emerald-700 font-medium">Matching NGOs in {formData.district} will send drive notifications to {formData.phone}.</p>
+                <p className="text-[11px] text-emerald-700 font-medium">
+                  {selectedOpening 
+                    ? `Application for "${selectedOpening.title}" submitted! Matching NGOs in ${formData.district} will contact you at ${formData.phone}.`
+                    : `Matching NGOs in ${formData.district} will send drive notifications to ${formData.phone}.`}
+                </p>
               </div>
             </div>
           )}
@@ -364,7 +397,7 @@ export default function Volunteer() {
               className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 active:scale-95 mt-4"
             >
               <Send className="w-4 h-4" />
-              <span>Submit Volunteer Profile</span>
+              <span>{selectedOpening ? `Submit Application for ${selectedOpening.title}` : 'Submit Volunteer Profile'}</span>
             </button>
 
           </form>
@@ -381,9 +414,8 @@ export default function Volunteer() {
 
             <div className="space-y-3">
               {VOLUNTEER_OPPORTUNITIES.map((op) => {
-                const isApplied = appliedOps.includes(op.id);
+                const isApplied = appliedOps.includes(String(op.id));
                 const neededBgs = op.neededBloodGroups || (op.category === 'Blood Donation' ? ['O+', 'O-', 'AB-'] : null);
-                const warningMsg = bloodWarnings[op.id];
 
                 return (
                   <div key={op.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
@@ -409,14 +441,6 @@ export default function Volunteer() {
                     <h3 className="text-xs font-bold text-slate-900 leading-snug">{op.title}</h3>
                     <p className="text-[11px] text-slate-600 font-medium">by <span className="font-semibold text-slate-800">{op.ngo}</span></p>
 
-                    {/* Gentle Blood Group Mismatch Warning Banner */}
-                    {warningMsg && (
-                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[11px] font-bold flex items-start gap-1.5 animate-in fade-in">
-                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <span>{warningMsg}</span>
-                      </div>
-                    )}
-
                     <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 pt-2 border-t border-slate-200/60">
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-blue-600" /> {op.commitment}</span>
                       
@@ -426,7 +450,7 @@ export default function Volunteer() {
                         </span>
                       ) : (
                         <button
-                          onClick={() => handleOpenApplyModal(op)}
+                          onClick={() => handleApplyNowClick(op)}
                           className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1 cursor-pointer active:scale-95"
                         >
                           <span>{t('volunteer.applyNow', 'Apply Now →')}</span>
@@ -441,143 +465,6 @@ export default function Volunteer() {
         </div>
 
       </div>
-
-      {/* APPLY NOW MODAL OVERLAY */}
-      {selectedOpening && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
-            
-            {/* Modal Header */}
-            <div className="p-6 bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white relative">
-              <button
-                onClick={() => setSelectedOpening(null)}
-                className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <span className="text-[10px] uppercase font-black tracking-wider text-blue-200 block mb-1">
-                {t('volunteer.applyModalTitle', 'Volunteer Application')}
-              </span>
-              <h2 className="text-lg font-black text-white leading-snug">{selectedOpening.title}</h2>
-              <p className="text-xs text-blue-100/90 font-semibold mt-0.5">by {selectedOpening.ngo} ({selectedOpening.district})</p>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-4 text-xs font-semibold">
-              {applySuccess ? (
-                <div className="p-6 text-center space-y-3 animate-in zoom-in-95">
-                  <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-inner">
-                    <CheckCircle2 className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-base font-extrabold text-slate-900">{t('volunteer.applySuccess', 'Application Submitted Successfully!')}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                    <strong className="text-slate-900 font-bold">{selectedOpening.ngo}</strong> {t('volunteer.applySuccessSub', 'will review your application and contact you soon.')}
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleApplySubmit} className="space-y-4">
-                  <div>
-                    <label className="text-slate-700 font-bold block mb-1">{t('volunteer.applicantName', 'Full Name *')}</label>
-                    <input
-                      type="text"
-                      required
-                      value={applyForm.applicant_name}
-                      onChange={(e) => setApplyForm({ ...applyForm, applicant_name: e.target.value })}
-                      placeholder="e.g. Dharshini Raj"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none text-slate-900 font-bold"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-slate-700 font-bold block mb-1">{t('volunteer.mobileNumber', 'Mobile Contact Number *')}</label>
-                      <div className="flex items-center">
-                        <span className="px-3 py-2.5 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-slate-600 font-bold text-xs">+91</span>
-                        <input
-                          type="tel"
-                          required
-                          maxLength={10}
-                          value={applyForm.mobile_number}
-                          onChange={(e) => setApplyForm({ ...applyForm, mobile_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                          placeholder="9444088776"
-                          className="w-full p-2.5 rounded-r-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:border-blue-600"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-slate-700 font-bold block mb-1">{t('volunteer.emailAddress', 'Email Address (Optional)')}</label>
-                      <input
-                        type="email"
-                        value={applyForm.email}
-                        onChange={(e) => setApplyForm({ ...applyForm, email: e.target.value })}
-                        placeholder="dharshini@ngo-tn.org"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none text-slate-900 font-medium"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-slate-700 font-bold block mb-1">
-                      {t('volunteer.applicantPlace', 'Place / Area *')}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={applyForm.place}
-                      onChange={(e) => setApplyForm({ ...applyForm, place: e.target.value })}
-                      placeholder={t('volunteer.applicantPlacePlaceholder', 'e.g. T. Nagar, Chennai')}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none text-slate-900 font-semibold"
-                    />
-                  </div>
-
-                  {/* CONDITIONAL BLOOD GROUP CONFIRMATION FIELD */}
-                  {(selectedOpening.category === 'Blood Donation' || selectedOpening.neededBloodGroups) && (
-                    <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 space-y-1.5">
-                      <label className="text-rose-950 font-extrabold text-xs flex items-center gap-1.5">
-                        <Droplet className="w-4 h-4 text-rose-600 shrink-0" />
-                        <span>{t('volunteer.confirmBloodGroup', 'Blood Group Confirmation *')}</span>
-                      </label>
-                      <select
-                        required
-                        value={applyForm.blood_group}
-                        onChange={(e) => setApplyForm({ ...applyForm, blood_group: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-rose-300 focus:border-rose-600 focus:outline-none bg-white text-slate-900 font-bold text-xs cursor-pointer"
-                      >
-                        {bloodGroupOptions.map(bg => (
-                          <option key={bg} value={bg}>{bg}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="text-slate-700 font-bold block mb-1">{t('volunteer.whyVolunteer', 'Why do you want to volunteer for this drive? (Optional)')}</label>
-                    <textarea
-                      rows="3"
-                      value={applyForm.message}
-                      onChange={(e) => setApplyForm({ ...applyForm, message: e.target.value })}
-                      placeholder="Briefly share your experience or reason for applying..."
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:outline-none text-slate-900 font-medium resize-none"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={submittingApply}
-                    className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-                  >
-                    <Send className="w-4 h-4" />
-                    <span>{submittingApply ? t('volunteer.submitting', 'Submitting Application...') : t('volunteer.submitApplication', 'Submit Application')}</span>
-                  </button>
-                </form>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
 
     </div>
   );

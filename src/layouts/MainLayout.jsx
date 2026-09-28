@@ -9,7 +9,6 @@ import {
   RegisterNGOModal, 
   PostEventModal 
 } from '../components/Modals';
-import { INITIAL_NOTIFICATIONS } from '../data/mockData';
 
 export default function MainLayout({
   selectedDistrict,
@@ -28,13 +27,6 @@ export default function MainLayout({
   setShowPostEventModal
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [notificationsList, setNotificationsList] = useState(INITIAL_NOTIFICATIONS);
-  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(3);
-
-  const handleClearNotifications = () => {
-    setUnreadNotificationsCount(0);
-    setNotificationsList(notificationsList.map(n => ({ ...n, unread: false })));
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex font-sans antialiased">
@@ -43,7 +35,6 @@ export default function MainLayout({
       <Sidebar 
         mobileOpen={mobileOpen} 
         setMobileOpen={setMobileOpen}
-        unreadNotificationsCount={unreadNotificationsCount}
       />
 
       {/* Main Content Wrapper */}
@@ -54,10 +45,8 @@ export default function MainLayout({
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           setMobileOpen={setMobileOpen}
-          unreadNotificationsCount={unreadNotificationsCount}
           onOpenDonateModal={() => setShowDonateModal(true)}
           onOpenVolunteerModal={() => setShowVolunteerModal(true)}
-          onClearNotifications={handleClearNotifications}
         />
 
         {/* 3. Dashboard Outlet Container */}
@@ -69,10 +58,7 @@ export default function MainLayout({
             onOpenVolunteerModal: () => setShowVolunteerModal(true),
             onOpenDonateModal: () => setShowDonateModal(true),
             onOpenRegisterNGOModal: () => setShowRegisterNGOModal(true),
-            onOpenPostEventModal: () => setShowPostEventModal(true),
-            notificationsList,
-            unreadNotificationsCount,
-            onClearNotifications: handleClearNotifications
+            onOpenPostEventModal: () => setShowPostEventModal(true)
           }} />
         </main>
 

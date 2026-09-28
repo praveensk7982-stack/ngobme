@@ -15,7 +15,6 @@ import Volunteer from './pages/Volunteer';
 import Donate from './pages/Donate';
 import FindHelp from './pages/FindHelp';
 import MyActivity from './pages/MyActivity';
-import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import SearchResults from './pages/SearchResults';
 import Emergency from './pages/Emergency';
@@ -108,7 +107,7 @@ export default function App() {
             <Route path="/donate" element={<Donate />} />
             <Route path="/find-help" element={<FindHelp />} />
             <Route path="/my-activity" element={<MyActivity />} />
-            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/notifications" element={<Navigate to="/" replace />} />
             <Route path="/settings" element={<Settings />} />
 
             <Route 

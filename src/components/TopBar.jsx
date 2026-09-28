@@ -5,7 +5,6 @@ import {
   Search, 
   Mic, 
   MicOff, 
-  Bell, 
   ChevronDown, 
   Menu, 
   User, 
@@ -21,7 +20,7 @@ import {
   ShieldCheck,
   Sparkles
 } from 'lucide-react';
-import { INITIAL_NOTIFICATIONS, getCombinedSearchData } from '../data/mockData';
+import { getCombinedSearchData } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import AIAssistantModal from './AIAssistantModal';
@@ -33,9 +32,7 @@ export default function TopBar({
   searchQuery, 
   setSearchQuery, 
   setMobileOpen,
-  unreadNotificationsCount,
-  onOpenDonateModal,
-  onClearNotifications
+  onOpenDonateModal
 }) {
   const { t } = useTranslation();
   const { user: authUser, role, logout } = useAuth();
@@ -48,7 +45,6 @@ export default function TopBar({
   };
   
   const [showAIAssistant, setShowAIAssistant] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   
@@ -347,7 +343,6 @@ export default function TopBar({
             <button
               onClick={() => {
                 setShowUserMenu(!showUserMenu);
-                setShowNotifications(false);
               }}
               className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 transition group"
             >

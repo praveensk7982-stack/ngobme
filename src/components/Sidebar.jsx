@@ -9,7 +9,6 @@ import {
   HeartHandshake, 
   Search, 
   Activity, 
-  Bell, 
   Settings,
   X,
   ShieldCheck,
@@ -18,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotificationsCount = 12 }) {
+export default function Sidebar({ mobileOpen, setMobileOpen }) {
   const { t } = useTranslation();
   const { user, role } = useAuth();
   const location = useLocation();
@@ -54,7 +53,6 @@ export default function Sidebar({ mobileOpen, setMobileOpen, unreadNotifications
     { to: '/donate', labelKey: 'nav.donate', icon: HeartHandshake, badge: null },
     { to: '/find-help', labelKey: 'nav.findHelp', icon: Search, badge: null },
     { to: '/my-activity', labelKey: 'nav.myActivity', icon: Activity, badge: null },
-    { to: '/notifications', labelKey: 'nav.notifications', icon: Bell, badge: unreadNotificationsCount },
     { to: '/settings', labelKey: 'nav.settings', icon: Settings, badge: null },
   ];
 
